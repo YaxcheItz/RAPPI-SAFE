@@ -1,0 +1,123 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#dc2626">
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+    <title>{% block title %}Rappi Safe{% endblock %}</title>
+
+    <!-- TailwindCSS -->
+    <link rel="stylesheet" href="{% static 'css/output.css' %}">
+
+    <!-- Leaflet para mapas -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <!-- Font Awesome para iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+    {% block extra_css %}{% endblock %}
+
+    <style>
+        /* Prevenir zoom en iOS */
+        input[type="text"],
+        input[type="email"],
+        input[type="password"],
+        input[type="tel"],
+        textarea,
+        select {
+            font-size: 16px !important;
+        }
+
+        /* Ocultar scrollbar pero mantener funcionalidad */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Estilos base para Leaflet */
+        .leaflet-container {
+            font-family: inherit;
+        }
+
+        /* Asegurar que el contenedor de Leaflet tenga las propiedades correctas */
+        .leaflet-container a {
+            color: inherit;
+        }
+
+        /* Fix para marcadores personalizados */
+        .leaflet-marker-icon.custom-marker {
+            background: transparent;
+            border: none;
+        }
+    </style>
+</head>
+<body class="h-full bg-white">
+    {% if user.is_authenticated %}
+    <!-- Navbar - Limpio y Minimalista -->
+    <nav class="header sticky top-0 z-50 backdrop-blur-sm bg-white/95">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center gap-2">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-rappi-red to-red-700 flex items-center justify-center shadow-sm">
+                        <i class="fas fa-shield-alt text-white text-lg"></i>
+                    </div>
+                    <h1 class="text-xl font-bold text-gray-900 tracking-tight">Rappi Safe</h1>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="hidden sm:flex flex-col items-end">
+                        <span class="text-sm font-medium text-gray-900">{{ user.get_full_name|default:user.username }}</span>
+                        <span class="text-xs text-gray-500">{{ user.get_rol_display }}</span>
+                    </div>
+                    <div class="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center hover:bg-gray-100 transition-colors cursor-pointer">
+                        <a href="{% url 'logout' %}" class="text-gray-600 hover:text-rappi-red transition-colors">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+
+    <!-- Mensajes Flash -->
+    {% if messages %}
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+        {% for message in messages %}
+        <div class="{% if message.tags == 'success' %}alert-success{% elif message.tags == 'error' %}alert-danger{% elif message.tags == 'warning' %}alert-warning{% else %}alert-info{% endif %} mb-3 flex items-center gap-3">
+            <div class="{% if message.tags == 'success' %}status-icon-success{% elif message.tags == 'error' %}status-icon-danger{% elif message.tags == 'warning' %}status-icon-warning{% else %}status-icon-info{% endif %}">
+                <i class="fas {% if message.tags == 'success' %}fa-check{% elif message.tags == 'error' %}fa-exclamation-triangle{% elif message.tags == 'warning' %}fa-info-circle{% else %}fa-info{% endif %}"></i>
+            </div>
+            <div class="flex-1">
+                <p class="font-medium">{{ message }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Contenido Principal -->
+    <main class="{% block main_class %}max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6{% endblock %}">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // CSRF Token para AJAX
+        const csrftoken = '{{ csrf_token }}';
+
+        // Configuración global
+        window.RappiSafe = {
+            csrfToken: csrftoken,
+            userId: {% if user.is_authenticated %}{{ user.id }}{% else %}null{% endif %},
+            userRole: {% if user.is_authenticated %}'{{ user.rol }}'{% else %}null{% endif %}
+        };
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

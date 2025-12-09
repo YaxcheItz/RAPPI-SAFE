@@ -1,0 +1,216 @@
+{% extends 'rappiSafe/base.html' %}
+{% load static %}
+
+{% block title %}Mi Perfil - Rappi Safe{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 mb-1">Mi Perfil</h1>
+            <p class="text-gray-500">Administra tu información personal y de seguro</p>
+        </div>
+        <a href="{% url 'repartidor_home' %}" class="link">
+            <i class="fas fa-arrow-left"></i>
+            Volver
+        </a>
+    </div>
+
+    <form method="POST" enctype="multipart/form-data" class="space-y-6">
+        {% csrf_token %}
+
+        <!-- Información Personal -->
+        <div class="card">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="status-icon-info">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl font-semibold text-gray-900">Información Personal</h2>
+                    <p class="text-sm text-gray-500">Datos básicos de tu cuenta</p>
+                </div>
+            </div>
+
+            <div class="space-y-5">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-900 mb-2">
+                            Nombre
+                        </label>
+                        <input type="text" name="first_name" value="{{ user.first_name }}" required class="input">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-900 mb-2">
+                            Apellido
+                        </label>
+                        <input type="text" name="last_name" value="{{ user.last_name }}" required class="input">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-900 mb-2">
+                            Correo Electrónico
+                        </label>
+                        <input type="email" value="{{ user.email }}" disabled class="input">
+                        <p class="text-xs text-gray-500 mt-1.5">El correo no se puede cambiar</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-900 mb-2">
+                            Teléfono
+                        </label>
+                        <input type="tel" name="telefono" value="{{ user.telefono }}" class="input" placeholder="+52 1234567890">
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-900 mb-2">
+                            Número de Identificación
+                        </label>
+                        <input type="text" value="{{ perfil.numero_identificacion }}" disabled class="input">
+                        <p class="text-xs text-gray-500 mt-1.5">Asignado automáticamente</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-900 mb-2">
+                            Foto de Perfil
+                        </label>
+                        <input type="file" name="foto" accept="image/*"
+                               class="block w-full text-sm text-gray-600 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-gray-50 file:text-gray-700 hover:file:bg-gray-100 file:cursor-pointer cursor-pointer border border-gray-200 rounded-xl">
+                        {% if perfil.foto %}
+                        <p class="text-xs text-gray-500 mt-1.5">
+                            <i class="fas fa-check-circle text-green-600"></i>
+                            Foto cargada
+                        </p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Información de Seguro -->
+        <div class="card">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="status-icon-success">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <div class="flex-1">
+                    <h2 class="text-xl font-semibold text-gray-900">Información de Seguro</h2>
+                    <p class="text-sm text-gray-500">Opcional - Visible para operadores en emergencias</p>
+                </div>
+            </div>
+
+            <!-- Checkbox para activar/desactivar seguro -->
+            <div class="mb-6 p-4 rounded-xl bg-gray-50 border border-gray-100">
+                <label class="inline-flex items-center cursor-pointer">
+                    <input type="checkbox" name="tiene_seguro"
+                           class="w-5 h-5 text-rappi-red focus:ring-rappi-red/20 border-gray-300 rounded transition-colors"
+                           {% if perfil.tiene_seguro %}checked{% endif %}
+                           onchange="toggleSeguroFields(this.checked)">
+                    <span class="ml-3">
+                        <span class="text-gray-900 font-medium block">Tengo seguro médico o de vida</span>
+                        <span class="text-xs text-gray-500">Esta información será compartida con operadores en caso de emergencia</span>
+                    </span>
+                </label>
+            </div>
+
+            <!-- Campos de seguro (mostrar/ocultar según checkbox) -->
+            <div id="seguro-fields" class="{% if not perfil.tiene_seguro %}hidden{% endif %} space-y-5">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-900 mb-2">
+                            Nombre de la Aseguradora
+                        </label>
+                        <input type="text" name="nombre_aseguradora" value="{{ perfil.nombre_aseguradora }}"
+                               class="input" placeholder="Ej: MetLife, GNP, Seguros Monterrey">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-900 mb-2">
+                            Número de Póliza
+                        </label>
+                        <input type="text" name="numero_poliza" value="{{ perfil.numero_poliza }}"
+                               class="input" placeholder="Ej: POL-123456789">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-900 mb-2">
+                            Teléfono de la Aseguradora
+                        </label>
+                        <input type="tel" name="telefono_aseguradora" value="{{ perfil.telefono_aseguradora }}"
+                               class="input" placeholder="+52 800 123 4567">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-900 mb-2">
+                            Vigencia del Seguro
+                        </label>
+                        <input type="date" name="vigencia_seguro"
+                               value="{% if perfil.vigencia_seguro %}{{ perfil.vigencia_seguro|date:'Y-m-d' }}{% endif %}"
+                               class="input">
+                    </div>
+                </div>
+
+                <!-- Nota informativa -->
+                <div class="alert-info">
+                    <div class="flex items-start gap-3">
+                        <div class="status-icon-info flex-shrink-0">
+                            <i class="fas fa-lightbulb"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-sm text-blue-800">
+                                Esta información permitirá a los operadores contactar rápidamente con tu aseguradora en caso de emergencia médica.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Botones de acción -->
+        <div class="flex flex-col sm:flex-row gap-3 sticky bottom-4 bg-white/95 backdrop-blur-sm p-4 rounded-2xl shadow-lg border border-gray-100">
+            <button type="submit" class="flex-1 btn-primary py-4">
+                <i class="fas fa-save mr-2"></i>
+                Guardar Cambios
+            </button>
+            <a href="{% url 'repartidor_home' %}" class="flex-1 btn-secondary py-4">
+                Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function toggleSeguroFields(show) {
+        const fields = document.getElementById('seguro-fields');
+        if (show) {
+            fields.classList.remove('hidden');
+            // Animación suave
+            fields.style.opacity = '0';
+            fields.style.transform = 'translateY(-10px)';
+            setTimeout(() => {
+                fields.style.transition = 'all 0.3s ease-out';
+                fields.style.opacity = '1';
+                fields.style.transform = 'translateY(0)';
+            }, 10);
+        } else {
+            fields.style.transition = 'all 0.2s ease-in';
+            fields.style.opacity = '0';
+            fields.style.transform = 'translateY(-10px)';
+            setTimeout(() => {
+                fields.classList.add('hidden');
+            }, 200);
+        }
+    }
+</script>
+{% endblock %}

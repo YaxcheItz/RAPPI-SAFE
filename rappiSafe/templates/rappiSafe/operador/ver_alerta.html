@@ -1,0 +1,450 @@
+{% extends 'rappiSafe/base.html' %}
+{% load static %}
+
+{% block title %}Alerta {{ alerta.id|truncatechars:8 }} - Rappi Safe{% endblock %}
+
+{% block content %}
+<div class="container-main">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 mb-1">Detalle de Alerta</h1>
+            <p class="text-sm text-gray-500">ID: {{ alerta.id|truncatechars:12 }}</p>
+        </div>
+        <a href="{% url 'operador_dashboard' %}" class="link">
+            <i class="fas fa-arrow-left"></i>
+            Dashboard
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Columna principal (2/3) -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Información de la alerta -->
+            <div class="card">
+                <div class="flex items-start justify-between mb-6">
+                    <div class="flex items-start gap-4">
+                        <div class="status-icon-danger">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-900">{{ alerta.repartidor.get_full_name }}</h2>
+                            <a href="tel:{{ alerta.repartidor.telefono }}" class="text-sm text-gray-600 hover:text-rappi-red flex items-center gap-1 mt-1">
+                                <i class="fas fa-phone"></i>
+                                {{ alerta.repartidor.telefono }}
+                            </a>
+                        </div>
+                    </div>
+                    <div class="flex flex-col items-end gap-2">
+                        <span class="badge {% if alerta.tipo == 'panico' %}badge-danger{% else %}badge-warning{% endif %} text-base">
+                            <i class="fas {% if alerta.tipo == 'panico' %}fa-hand-paper{% else %}fa-exclamation-triangle{% endif %} mr-1"></i>
+                            {{ alerta.get_tipo_display }}
+                        </span>
+                        <span class="badge {% if alerta.estado == 'pendiente' %}badge-danger{% elif alerta.estado == 'en_atencion' %}badge-warning{% else %}badge-success{% endif %}">
+                            {{ alerta.get_estado_display }}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="p-3 rounded-xl bg-gray-50">
+                        <p class="text-xs text-gray-500 mb-1">Fecha y hora</p>
+                        <p class="font-medium text-gray-900">{{ alerta.creado_en|date:"d/m/Y" }}</p>
+                        <p class="text-sm text-gray-600">{{ alerta.creado_en|date:"H:i:s" }}</p>
+                    </div>
+                    <div class="p-3 rounded-xl bg-gray-50">
+                        <p class="text-xs text-gray-500 mb-1">Batería</p>
+                        <p class="font-medium text-gray-900">{{ alerta.nivel_bateria|default:"-" }}%</p>
+                    </div>
+                    <div class="p-3 rounded-xl bg-gray-50">
+                        <p class="text-xs text-gray-500 mb-1">Atendido por</p>
+                        <p class="font-medium text-gray-900 text-sm">{{ alerta.atendido_por.get_full_name|default:"-" }}</p>
+                    </div>
+                    <div class="p-3 rounded-xl bg-gray-50">
+                        <p class="text-xs text-gray-500 mb-1">ID de Alerta</p>
+                        <p class="font-medium text-gray-900 text-xs">{{ alerta.id|truncatechars:10 }}</p>
+                    </div>
+                </div>
+
+                <!-- Acciones -->
+                <div class="divider"></div>
+                <div class="flex flex-wrap gap-3">
+                    {% if alerta.estado == 'pendiente' %}
+                    <button onclick="atenderAlerta('{{ alerta.id }}')" class="btn-primary">
+                        <i class="fas fa-hand-pointer mr-2"></i>Atender Alerta
+                    </button>
+                    {% endif %}
+
+                    {% if alerta.estado in 'pendiente,en_atencion' %}
+                    <a href="tel:{{ alerta.repartidor.telefono }}" class="btn-success">
+                        <i class="fas fa-phone mr-2"></i>Llamar
+                    </a>
+                    <button onclick="cerrarAlerta('{{ alerta.id }}')" class="btn-danger">
+                        <i class="fas fa-times-circle mr-2"></i>Cerrar Alerta
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Mapa con ubicación y trayectoria -->
+            <div class="card">
+                <h3 class="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-rappi-red/10 flex items-center justify-center">
+                        <i class="fas fa-map-marked-alt text-rappi-red text-sm"></i>
+                    </div>
+                    Ubicación y Trayectoria
+                </h3>
+                <div id="map" class="map-container" style="height: 450px"></div>
+            </div>
+
+            <!-- Bitácora del incidente -->
+            {% if incidente %}
+            <div class="card">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-semibold text-gray-900 flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+                            <i class="fas fa-clipboard-list text-blue-600 text-sm"></i>
+                        </div>
+                        Bitácora del Incidente
+                    </h3>
+                    <button onclick="mostrarFormularioBitacora()" class="btn-secondary text-sm">
+                        <i class="fas fa-plus mr-2"></i>Agregar Nota
+                    </button>
+                </div>
+
+                <!-- Folio 911 -->
+                <div class="alert-info mb-6">
+                    <label class="block text-sm font-semibold text-blue-900 mb-3">
+                        <i class="fas fa-hashtag mr-1"></i>
+                        Folio 911
+                    </label>
+                    <div class="flex gap-2">
+                        <input type="text" id="folio-911" value="{{ incidente.folio_911 }}"
+                               placeholder="Ingresa el folio 911"
+                               class="input flex-1">
+                        <button onclick="guardarFolio911()" class="btn-primary">
+                            Guardar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Lista de bitácoras -->
+                <div class="space-y-3 max-h-96 overflow-y-auto">
+                    {% for bitacora in bitacoras %}
+                    <div class="p-4 rounded-xl bg-gray-50 border border-gray-100">
+                        <div class="flex items-start justify-between mb-2">
+                            <div>
+                                <p class="text-sm font-semibold text-gray-900">{{ bitacora.operador.get_full_name }}</p>
+                                <p class="text-xs text-gray-500">{{ bitacora.timestamp|date:"d/m/Y H:i:s" }}</p>
+                            </div>
+                        </div>
+                        <p class="text-sm text-gray-700 leading-relaxed">{{ bitacora.accion }}</p>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-8">
+                        <div class="status-icon-info mx-auto mb-3">
+                            <i class="fas fa-inbox"></i>
+                        </div>
+                        <p class="text-gray-600 text-sm">No hay registros en la bitácora</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar (1/3) -->
+        <div class="space-y-6">
+            <!-- Información de Seguro -->
+            {% if alerta.repartidor.perfil_repartidor.tiene_seguro %}
+            <div class="sidebar-section border-l-4 border-green-500">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center">
+                        <i class="fas fa-shield-alt text-green-600 text-sm"></i>
+                    </div>
+                    Información de Seguro
+                </h3>
+                <div class="space-y-3">
+                    <div class="p-3 rounded-xl bg-gray-50">
+                        <p class="text-xs text-gray-500 mb-1">Aseguradora</p>
+                        <p class="font-semibold text-gray-900">{{ alerta.repartidor.perfil_repartidor.nombre_aseguradora }}</p>
+                    </div>
+
+                    {% if alerta.repartidor.perfil_repartidor.numero_poliza %}
+                    <div class="p-3 rounded-xl bg-gray-50">
+                        <p class="text-xs text-gray-500 mb-1">Número de Póliza</p>
+                        <p class="font-medium text-gray-900">{{ alerta.repartidor.perfil_repartidor.numero_poliza }}</p>
+                    </div>
+                    {% endif %}
+
+                    {% if alerta.repartidor.perfil_repartidor.telefono_aseguradora %}
+                    <div class="p-3 rounded-xl bg-green-50 border border-green-200">
+                        <p class="text-xs text-gray-500 mb-2">Teléfono Aseguradora</p>
+                        <a href="tel:{{ alerta.repartidor.perfil_repartidor.telefono_aseguradora }}"
+                           class="font-semibold text-green-700 hover:text-green-800 flex items-center gap-2 text-lg">
+                            <i class="fas fa-phone"></i>
+                            {{ alerta.repartidor.perfil_repartidor.telefono_aseguradora }}
+                        </a>
+                    </div>
+                    {% endif %}
+
+                    {% if alerta.repartidor.perfil_repartidor.vigencia_seguro %}
+                    <div class="p-3 rounded-xl bg-gray-50">
+                        <p class="text-xs text-gray-500 mb-1">Vigencia</p>
+                        <p class="font-medium text-gray-900">{{ alerta.repartidor.perfil_repartidor.vigencia_seguro|date:"d/m/Y" }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Contactos de confianza -->
+            <div class="sidebar-section">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+                        <i class="fas fa-users text-blue-600 text-sm"></i>
+                    </div>
+                    Contactos de Confianza
+                </h3>
+                <div class="space-y-3">
+                    {% for contacto in contactos %}
+                    <div class="p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors">
+                        <p class="font-semibold text-gray-900 mb-1">{{ contacto.nombre }}</p>
+                        <a href="tel:{{ contacto.telefono }}" class="text-sm text-rappi-red hover:text-red-700 font-medium flex items-center gap-1">
+                            <i class="fas fa-phone"></i>
+                            {{ contacto.telefono }}
+                        </a>
+                        {% if contacto.relacion %}
+                        <p class="text-xs text-gray-500 mt-1">{{ contacto.relacion }}</p>
+                        {% endif %}
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-6">
+                        <div class="status-icon-warning mx-auto mb-2">
+                            <i class="fas fa-user-slash text-sm"></i>
+                        </div>
+                        <p class="text-gray-600 text-xs">Sin contactos registrados</p>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                {% if contactos and incidente %}
+                <button onclick="notificarContactos()" class="w-full btn-primary mt-4"
+                        {% if incidente.contactos_notificados %}disabled{% endif %}>
+                    <i class="fas fa-bell mr-2"></i>
+                    {% if incidente.contactos_notificados %}Contactos Notificados{% else %}Notificar Contactos{% endif %}
+                </button>
+                {% endif %}
+            </div>
+
+            <!-- Información adicional -->
+            {% if alerta.datos_sensores %}
+            <div class="sidebar-section">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
+                        <i class="fas fa-microchip text-purple-600 text-sm"></i>
+                    </div>
+                    Datos de Sensores
+                </h3>
+                <pre class="text-xs bg-gray-50 p-3 rounded-xl overflow-x-auto border border-gray-100 font-mono">{{ alerta.datos_sensores }}</pre>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Modal para agregar bitácora -->
+    <div id="bitacora-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center px-4">
+        <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <div class="status-icon-info mx-auto mb-4">
+                <i class="fas fa-clipboard-list text-xl"></i>
+            </div>
+            <h3 class="text-xl font-bold text-gray-900 text-center mb-4">Agregar Nota a Bitácora</h3>
+            <textarea id="bitacora-texto" rows="4" class="input mb-4" placeholder="Describe la acción realizada..."></textarea>
+            <div class="flex gap-3">
+                <button onclick="cerrarFormularioBitacora()" class="flex-1 btn-secondary">
+                    Cancelar
+                </button>
+                <button onclick="guardarBitacora()" class="flex-1 btn-primary">
+                    Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let map;
+    let wsConnection;
+
+    // Inicializar mapa
+    function initMap() {
+        map = L.map('map').setView([{{ alerta.latitud }}, {{ alerta.longitud }}], 15);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Marcador de la alerta inicial
+        L.marker([{{ alerta.latitud }}, {{ alerta.longitud }}], {
+            icon: L.divIcon({
+                className: 'custom-marker',
+                html: '<div class="w-12 h-12 rounded-full bg-red-600 flex items-center justify-center shadow-xl border-2 border-white"><i class="fas fa-exclamation text-white text-xl"></i></div>',
+                iconSize: [48, 48]
+            })
+        }).addTo(map).bindPopup('<strong>Ubicación inicial de la alerta</strong>');
+
+        // Dibujar trayectoria si existe
+        {% if trayectorias %}
+        const trayectoriaCoords = [
+            {% for tray in trayectorias %}
+            [{{ tray.latitud }}, {{ tray.longitud }}],
+            {% endfor %}
+        ];
+
+        if (trayectoriaCoords.length > 0) {
+            L.polyline(trayectoriaCoords, {
+                color: '#dc2626',
+                weight: 4,
+                opacity: 0.7
+            }).addTo(map);
+
+            // Marcador de última posición
+            const ultima = trayectoriaCoords[trayectoriaCoords.length - 1];
+            L.circleMarker(ultima, {
+                radius: 10,
+                fillColor: '#dc2626',
+                color: '#fff',
+                weight: 2,
+                opacity: 1,
+                fillOpacity: 0.9
+            }).addTo(map).bindPopup('<strong>Última posición conocida</strong>');
+        }
+        {% endif %}
+    }
+
+    // Conectar WebSocket para actualizaciones en tiempo real
+    function conectarWebSocket() {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}/ws/ubicacion/{{ alerta.id }}/`;
+
+        wsConnection = new WebSocket(wsUrl);
+
+        wsConnection.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            if (data.tipo === 'ubicacion') {
+                // Agregar nuevo punto a la trayectoria
+                L.circleMarker([parseFloat(data.latitud), parseFloat(data.longitud)], {
+                    radius: 6,
+                    fillColor: '#dc2626',
+                    color: '#fff',
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                }).addTo(map);
+            }
+        };
+    }
+
+    // Atender alerta
+    function atenderAlerta(alertaId) {
+        fetch(`/operador/alerta/${alertaId}/atender/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': window.RappiSafe.csrfToken
+            }
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                location.reload();
+            }
+        });
+    }
+
+    // Cerrar alerta
+    function cerrarAlerta(alertaId) {
+        const notas = prompt('Notas de cierre (opcional):');
+        fetch(`/operador/alerta/${alertaId}/cerrar/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': window.RappiSafe.csrfToken
+            },
+            body: JSON.stringify({ notas: notas || '' })
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                alert('Alerta cerrada exitosamente');
+                window.location.href = '{% url "operador_dashboard" %}';
+            }
+        });
+    }
+
+    // Guardar folio 911
+    function guardarFolio911() {
+        const folio = document.getElementById('folio-911').value;
+        if (!folio) {
+            alert('Por favor ingresa un folio');
+            return;
+        }
+
+        fetch('/operador/incidente/{{ incidente.id }}/folio/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': window.RappiSafe.csrfToken
+            },
+            body: JSON.stringify({ folio: folio })
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                alert('Folio 911 registrado');
+                location.reload();
+            }
+        });
+    }
+
+    // Formulario de bitácora
+    function mostrarFormularioBitacora() {
+        document.getElementById('bitacora-modal').classList.remove('hidden');
+    }
+
+    function cerrarFormularioBitacora() {
+        document.getElementById('bitacora-modal').classList.add('hidden');
+        document.getElementById('bitacora-texto').value = '';
+    }
+
+    function guardarBitacora() {
+        const accion = document.getElementById('bitacora-texto').value;
+        if (!accion) {
+            alert('Por favor describe la acción realizada');
+            return;
+        }
+
+        fetch('/operador/incidente/{{ incidente.id }}/bitacora/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': window.RappiSafe.csrfToken
+            },
+            body: JSON.stringify({ accion: accion })
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                location.reload();
+            }
+        });
+    }
+
+    // Inicializar
+    document.addEventListener('DOMContentLoaded', function() {
+        initMap();
+        conectarWebSocket();
+    });
+</script>
+{% endblock %}

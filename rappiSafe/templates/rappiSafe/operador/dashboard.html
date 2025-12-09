@@ -1,0 +1,311 @@
+{% extends 'rappiSafe/base.html' %}
+{% load static %}
+
+{% block title %}Monitoreo - Rappi Safe{% endblock %}
+
+{% block main_class %}h-screen flex flex-col{% endblock %}
+
+{% block content %}
+<div class="flex-1 flex overflow-hidden">
+    <!-- Sidebar con lista de alertas -->
+    <div class="w-96 bg-white border-r border-gray-200 flex flex-col">
+        <div class="p-4 border-b border-gray-200">
+            <h2 class="text-2xl font-bold text-gray-800">Alertas Activas</h2>
+            <p class="text-sm text-gray-600">Monitoreo en tiempo real</p>
+        </div>
+
+        <div id="alertas-container" class="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar">
+            {% for alerta in alertas_activas %}
+            <div class="card cursor-pointer hover:shadow-lg transition-shadow alerta-item"
+                 data-alerta-id="{{ alerta.id }}"
+                 data-lat="{{ alerta.latitud }}"
+                 data-lon="{{ alerta.longitud }}"
+                 onclick="verDetalleAlerta('{{ alerta.id }}')">
+                <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                        <div class="flex items-center space-x-2 mb-2">
+                            <span class="badge {% if alerta.tipo == 'panico' %}badge-danger{% else %}badge-warning{% endif %}">
+                                {% if alerta.tipo == 'panico' %}
+                                <i class="fas fa-hand-paper mr-1"></i>Pánico
+                                {% else %}
+                                <i class="fas fa-car-crash mr-1"></i>Accidente
+                                {% endif %}
+                            </span>
+                            <span class="badge {% if alerta.estado == 'pendiente' %}badge-danger{% else %}badge-warning{% endif %}">
+                                {{ alerta.get_estado_display }}
+                            </span>
+                        </div>
+                        <p class="font-bold text-gray-800">{{ alerta.repartidor.get_full_name }}</p>
+                        <p class="text-sm text-gray-600">{{ alerta.repartidor.telefono }}</p>
+                        <p class="text-xs text-gray-500 mt-2">{{ alerta.creado_en|date:"d/m/Y H:i:s" }}</p>
+                    </div>
+                    {% if alerta.nivel_bateria %}
+                    <div class="text-right">
+                        <i class="fas fa-battery-{% if alerta.nivel_bateria > 75 %}full text-green-600{% elif alerta.nivel_bateria > 25 %}half text-yellow-600{% else %}quarter text-red-600{% endif %}"></i>
+                        <p class="text-xs text-gray-600">{{ alerta.nivel_bateria }}%</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center py-12">
+                <i class="fas fa-check-circle text-6xl text-green-300 mb-4"></i>
+                <p class="text-gray-600">No hay alertas activas</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Mapa principal -->
+    <div class="flex-1 relative">
+        <div id="map" class="w-full h-full"></div>
+
+        <!-- Controles del mapa -->
+        <div class="absolute top-4 right-4 bg-white rounded-lg shadow-lg p-4 space-y-2 z-10">
+            <button onclick="centrarMapa()" class="btn-secondary w-full text-sm">
+                <i class="fas fa-crosshairs mr-2"></i>Centrar
+            </button>
+            <button onclick="recargarAlertas()" class="btn-secondary w-full text-sm">
+                <i class="fas fa-sync-alt mr-2"></i>Actualizar
+            </button>
+        </div>
+
+        <!-- Indicador de conexión WebSocket -->
+        <div id="ws-status" class="absolute top-4 left-4 bg-white rounded-lg shadow-lg px-4 py-2 z-10">
+            <div class="flex items-center">
+                <div id="ws-indicator" class="w-3 h-3 rounded-full bg-yellow-500 mr-2 animate-pulse"></div>
+                <span id="ws-text" class="text-sm font-medium text-gray-700">Conectando...</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Audio para notificaciones -->
+<audio id="alert-sound" preload="auto">
+    <source src="{% static 'sounds/alert.mp3' %}" type="audio/mpeg">
+</audio>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let map;
+    let markers = {};
+    let wsConnection;
+    const alertSound = document.getElementById('alert-sound');
+
+    // Inicializar mapa
+    function initMap() {
+        // Centrar en Ciudad de México por defecto
+        map = L.map('map').setView([19.4326, -99.1332], 12);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors',
+            maxZoom: 19
+        }).addTo(map);
+
+        // Agregar alertas existentes al mapa
+        {% for alerta in alertas_activas %}
+        agregarMarcadorAlerta({
+            id: '{{ alerta.id }}',
+            tipo: '{{ alerta.tipo }}',
+            estado: '{{ alerta.estado }}',
+            repartidor: {
+                nombre: '{{ alerta.repartidor.get_full_name }}',
+                telefono: '{{ alerta.repartidor.telefono }}'
+            },
+            latitud: '{{ alerta.latitud }}',
+            longitud: '{{ alerta.longitud }}',
+            nivel_bateria: {{ alerta.nivel_bateria|default:'null' }},
+            creado_en: '{{ alerta.creado_en|date:"d/m/Y H:i:s" }}'
+        });
+        {% endfor %}
+
+        // Ajustar vista si hay alertas
+        if (Object.keys(markers).length > 0) {
+            const group = L.featureGroup(Object.values(markers));
+            map.fitBounds(group.getBounds().pad(0.1));
+        }
+    }
+
+    // Agregar marcador de alerta al mapa
+    function agregarMarcadorAlerta(alerta) {
+        const icon = L.divIcon({
+            className: 'custom-marker',
+            html: `<div class="relative">
+                <div class="w-10 h-10 rounded-full ${alerta.tipo === 'panico' ? 'bg-red-600' : 'bg-orange-500'} flex items-center justify-center shadow-lg animate-pulse">
+                    <i class="fas fa-${alerta.tipo === 'panico' ? 'hand-paper' : 'car-crash'} text-white text-lg"></i>
+                </div>
+            </div>`,
+            iconSize: [40, 40],
+            iconAnchor: [20, 20]
+        });
+
+        const marker = L.marker([parseFloat(alerta.latitud), parseFloat(alerta.longitud)], { icon })
+            .addTo(map)
+            .bindPopup(`
+                <div class="p-2">
+                    <p class="font-bold">${alerta.repartidor.nombre}</p>
+                    <p class="text-sm">${alerta.tipo === 'panico' ? 'Pánico' : 'Accidente'}</p>
+                    <p class="text-sm">${alerta.repartidor.telefono}</p>
+                    <p class="text-xs text-gray-600">${alerta.creado_en}</p>
+                    <button onclick="verDetalleAlerta('${alerta.id}')" class="btn-primary w-full mt-2 text-xs">
+                        Ver Detalle
+                    </button>
+                </div>
+            `);
+
+        markers[alerta.id] = marker;
+    }
+
+    // Ver detalle de alerta
+    function verDetalleAlerta(alertaId) {
+        window.location.href = `/operador/alerta/${alertaId}/`;
+    }
+
+    // Centrar mapa
+    function centrarMapa() {
+        if (Object.keys(markers).length > 0) {
+            const group = L.featureGroup(Object.values(markers));
+            map.fitBounds(group.getBounds().pad(0.1));
+        }
+    }
+
+    // Recargar alertas
+    function recargarAlertas() {
+        location.reload();
+    }
+
+    // Conectar WebSocket
+    function conectarWebSocket() {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}/ws/monitoreo/`;
+
+        wsConnection = new WebSocket(wsUrl);
+
+        wsConnection.onopen = function() {
+            console.log('WebSocket conectado');
+            document.getElementById('ws-indicator').className = 'w-3 h-3 rounded-full bg-green-500 mr-2';
+            document.getElementById('ws-text').textContent = 'Conectado';
+        };
+
+        wsConnection.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            console.log('Mensaje recibido:', data);
+
+            if (data.tipo === 'nueva_alerta') {
+                // Nueva alerta recibida
+                agregarNuevaAlerta(data.alerta);
+                mostrarNotificacion(data.alerta);
+                reproducirSonido();
+            } else if (data.tipo === 'actualizar_alerta') {
+                // Actualizar alerta existente
+                actualizarAlerta(data.alerta);
+            } else if (data.tipo === 'ubicacion') {
+                // Actualizar ubicación de un repartidor
+                actualizarUbicacion(data);
+            }
+        };
+
+        wsConnection.onerror = function(error) {
+            console.error('Error de WebSocket:', error);
+            document.getElementById('ws-indicator').className = 'w-3 h-3 rounded-full bg-red-500 mr-2';
+            document.getElementById('ws-text').textContent = 'Error';
+        };
+
+        wsConnection.onclose = function() {
+            console.log('WebSocket desconectado');
+            document.getElementById('ws-indicator').className = 'w-3 h-3 rounded-full bg-yellow-500 mr-2 animate-pulse';
+            document.getElementById('ws-text').textContent = 'Reconectando...';
+
+            // Intentar reconectar después de 3 segundos
+            setTimeout(conectarWebSocket, 3000);
+        };
+    }
+
+    // Agregar nueva alerta al dashboard
+    function agregarNuevaAlerta(alerta) {
+        // Agregar al mapa
+        agregarMarcadorAlerta(alerta);
+
+        // Agregar a la lista (si no existe)
+        if (!document.querySelector(`.alerta-item[data-alerta-id="${alerta.id}"]`)) {
+            const alertaHtml = `
+                <div class="card cursor-pointer hover:shadow-lg transition-shadow alerta-item"
+                     data-alerta-id="${alerta.id}"
+                     data-lat="${alerta.latitud}"
+                     data-lon="${alerta.longitud}"
+                     onclick="verDetalleAlerta('${alerta.id}')">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-2 mb-2">
+                                <span class="badge ${alerta.tipo === 'panico' ? 'badge-danger' : 'badge-warning'}">
+                                    ${alerta.tipo === 'panico' ? 'Pánico' : 'Accidente'}
+                                </span>
+                                <span class="badge badge-danger">${alerta.estado}</span>
+                            </div>
+                            <p class="font-bold text-gray-800">${alerta.repartidor.nombre}</p>
+                            <p class="text-sm text-gray-600">${alerta.repartidor.telefono}</p>
+                            <p class="text-xs text-gray-500 mt-2">${new Date().toLocaleString('es-MX')}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            const container = document.getElementById('alertas-container');
+            container.insertAdjacentHTML('afterbegin', alertaHtml);
+        }
+
+        // Centrar mapa en la nueva alerta
+        map.setView([parseFloat(alerta.latitud), parseFloat(alerta.longitud)], 15);
+    }
+
+    // Actualizar alerta existente
+    function actualizarAlerta(alerta) {
+        // Actualizar en la lista
+        const alertaElement = document.querySelector(`.alerta-item[data-alerta-id="${alerta.id}"]`);
+        if (alertaElement && alerta.estado === 'cerrada') {
+            alertaElement.remove();
+            if (markers[alerta.id]) {
+                map.removeLayer(markers[alerta.id]);
+                delete markers[alerta.id];
+            }
+        }
+    }
+
+    // Mostrar notificación del navegador
+    function mostrarNotificacion(alerta) {
+        if (Notification.permission === 'granted') {
+            new Notification('¡Nueva Alerta!', {
+                body: `${alerta.repartidor.nombre} - ${alerta.tipo === 'panico' ? 'Pánico' : 'Accidente'}`,
+                icon: '{% static "images/logo.png" %}',
+                requireInteraction: true
+            });
+        } else if (Notification.permission !== 'denied') {
+            Notification.requestPermission();
+        }
+    }
+
+    // Reproducir sonido de alerta
+    function reproducirSonido() {
+        alertSound.play().catch(err => console.log('No se pudo reproducir el sonido:', err));
+    }
+
+    // Solicitar permiso para notificaciones
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+    }
+
+    // Inicializar al cargar
+    document.addEventListener('DOMContentLoaded', function() {
+        initMap();
+        conectarWebSocket();
+    });
+
+    // Limpiar al cerrar
+    window.addEventListener('beforeunload', function() {
+        if (wsConnection) {
+            wsConnection.close();
+        }
+    });
+</script>
+{% endblock %}

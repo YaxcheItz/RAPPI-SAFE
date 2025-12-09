@@ -1,0 +1,1169 @@
+{% extends 'rappiSafe/base.html' %}
+{% load static %}
+
+{% block title %}Inicio - Rappi Safe{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Contenedor principal full height */
+    .main-container {
+        position: fixed;
+        top: 64px; /* Altura del navbar */
+        left: 0;
+        right: 0;
+        bottom: 64px; /* Altura del bottom nav */
+        display: flex;
+        flex-direction: row;
+    }
+
+    /* Panel lateral */
+    .side-panel {
+        width: 380px;
+        background: white;
+        border-right: 1px solid #e5e7eb;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Contenedor del mapa */
+    .map-wrapper {
+        flex: 1;
+        position: relative;
+        background: #f3f4f6;
+    }
+
+    #map {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        height: 100%;
+    }
+
+    /* Botón SOS */
+    .sos-button {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        border: none;
+        font-size: 24px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .sos-button:disabled {
+        background: #d1d5db;
+        color: #9ca3af;
+        cursor: not-allowed;
+    }
+
+    .sos-button:not(:disabled) {
+        background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+        color: white;
+        box-shadow: 0 4px 20px rgba(220, 38, 38, 0.4);
+    }
+
+    .sos-button:not(:disabled):active {
+        transform: scale(0.95);
+    }
+
+    /* Progress circle para botón SOS */
+    .progress-ring {
+        position: absolute;
+        top: -5px;
+        left: -5px;
+        width: 130px;
+        height: 130px;
+    }
+
+    .progress-ring__circle {
+        transition: stroke-dashoffset 3s linear;
+        transform: rotate(-90deg);
+        transform-origin: 50% 50%;
+    }
+
+    /* Search box */
+    .search-box {
+        position: relative;
+    }
+
+    .search-input {
+        width: 100%;
+        padding: 12px 40px 12px 16px;
+        border: 2px solid #e5e7eb;
+        border-radius: 12px;
+        font-size: 14px;
+        transition: all 0.2s;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: #dc2626;
+        box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+    }
+
+    .search-results {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        margin-top: 8px;
+        max-height: 300px;
+        overflow-y: auto;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        z-index: 100;
+    }
+
+    .search-result-item {
+        padding: 12px 16px;
+        cursor: pointer;
+        border-bottom: 1px solid #f3f4f6;
+        transition: background 0.2s;
+    }
+
+    .search-result-item:hover {
+        background: #f9fafb;
+    }
+
+    .search-result-item:last-child {
+        border-bottom: none;
+    }
+
+    /* Route card */
+    .route-card {
+        border: 2px solid transparent;
+        border-radius: 12px;
+        padding: 16px;
+        cursor: pointer;
+        transition: all 0.2s;
+        background: white;
+    }
+
+    .route-card:hover {
+        border-color: #dc2626;
+        box-shadow: 0 4px 12px rgba(220, 38, 38, 0.15);
+    }
+
+    .route-card.selected {
+        border-color: #dc2626;
+        background: #fef2f2;
+    }
+
+    /* Bottom nav */
+    .bottom-nav {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 64px;
+        background: white;
+        border-top: 1px solid #e5e7eb;
+        display: flex;
+        align-items: center;
+        justify-content: space-around;
+        z-index: 50;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .main-container {
+            flex-direction: column;
+        }
+
+        .side-panel {
+            width: 100%;
+            height: 50%;
+            border-right: none;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .map-wrapper {
+            height: 50%;
+        }
+    }
+
+    /* Badge */
+    .badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .badge-danger {
+        background: #fee2e2;
+        color: #dc2626;
+    }
+
+    .badge-success {
+        background: #dcfce7;
+        color: #16a34a;
+    }
+
+    .badge-warning {
+        background: #fef3c7;
+        color: #f59e0b;
+    }
+</style>
+{% endblock %}
+
+{% block main_class %}p-0 max-w-none{% endblock %}
+
+{% block content %}
+<!-- Contenedor principal -->
+<div class="main-container">
+    <!-- Panel lateral -->
+    <div class="side-panel">
+        <div class="p-6 space-y-6">
+            <!-- Estado del usuario -->
+            <div class="bg-gradient-to-r from-red-50 to-red-100 rounded-xl p-4">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="font-bold text-gray-900">{{ user.first_name|default:user.username }}</h3>
+                    <div id="status-badge" class="badge badge-warning">
+                        <i class="fas fa-circle text-xs mr-1"></i> Sin ruta
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 text-sm text-gray-600">
+                    <div class="flex items-center gap-1">
+                        <i class="fas fa-location-dot"></i>
+                        <span id="gps-status">Iniciando GPS...</span>
+                    </div>
+                    {% if perfil.nivel_bateria %}
+                    <div class="flex items-center gap-1">
+                        <i class="fas fa-battery-full"></i>
+                        <span>{{ perfil.nivel_bateria }}%</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Botón SOS -->
+            <div class="text-center bg-gray-50 rounded-xl p-6">
+                <div class="relative inline-block">
+                    <svg class="progress-ring hidden">
+                        <circle class="progress-ring__circle"
+                                stroke="#dc2626"
+                                stroke-width="4"
+                                fill="transparent"
+                                r="63"
+                                cx="65"
+                                cy="65"
+                                stroke-dasharray="395.84"
+                                stroke-dashoffset="395.84"/>
+                    </svg>
+                    <button id="sos-button" class="sos-button" disabled>
+                        <i class="fas fa-hand-paper text-3xl mb-2"></i>
+                        <div class="text-sm">SOS</div>
+                    </button>
+                </div>
+                <p id="sos-instruction" class="text-sm text-gray-500 mt-4">
+                    Mantén presionado 3s para activar
+                </p>
+                <p id="sos-status" class="text-xs text-gray-400 mt-2">
+                    Requiere ruta activa
+                </p>
+            </div>
+
+            <!-- Alertas activas -->
+            {% if alertas_activas %}
+            <div class="bg-red-50 border-l-4 border-red-500 rounded-xl p-4">
+                <div class="flex items-start gap-3">
+                    <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+                    <div class="flex-1">
+                        <h4 class="font-bold text-red-900 mb-2">Alerta Activa</h4>
+                        {% for alerta in alertas_activas %}
+                        <div class="bg-white rounded-lg p-3 mb-2">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="font-medium text-sm">{{ alerta.get_tipo_display }}</span>
+                                <span class="badge badge-danger">{{ alerta.get_estado_display }}</span>
+                            </div>
+                            <p class="text-xs text-gray-500">{{ alerta.creado_en|date:"d/m/Y H:i" }}</p>
+                            {% if alerta.estado == 'pendiente' %}
+                            <button onclick="cancelarAlerta('{{ alerta.id }}')"
+                                    class="text-xs text-red-600 hover:text-red-700 font-medium mt-2">
+                                Cancelar alerta
+                            </button>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Buscador de destino -->
+            <div>
+                <h3 class="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                    <i class="fas fa-route text-red-600"></i>
+                    Buscar Destino
+                </h3>
+                <div class="search-box">
+                    <input type="text"
+                           id="search-input"
+                           class="search-input"
+                           placeholder="Escribe una dirección o lugar..."
+                           autocomplete="off">
+                    <i class="fas fa-search absolute right-4 top-4 text-gray-400"></i>
+                    <div id="search-results" class="search-results hidden"></div>
+                </div>
+                <p class="text-xs text-gray-500 mt-2">
+                    <i class="fas fa-info-circle"></i> O haz clic en el mapa para seleccionar un punto
+                </p>
+            </div>
+
+            <!-- Rutas disponibles -->
+            <div id="routes-container" class="hidden">
+                <h3 class="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                    <i class="fas fa-road text-red-600"></i>
+                    Rutas Disponibles
+                </h3>
+                <div class="space-y-3" id="routes-list">
+                    <!-- Las rutas se cargarán aquí dinámicamente -->
+                </div>
+                <button id="start-route-btn"
+                        class="w-full bg-red-600 text-white font-bold py-3 rounded-xl hover:bg-red-700 transition-colors mt-4 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                        disabled>
+                    <i class="fas fa-play mr-2"></i>Iniciar Navegación
+                </button>
+            </div>
+
+            <!-- Navegación activa -->
+            <div id="active-navigation" class="hidden bg-green-50 border-l-4 border-green-500 rounded-xl p-4">
+                <h3 class="font-bold text-green-900 mb-3 flex items-center gap-2">
+                    <i class="fas fa-location-arrow animate-pulse"></i>
+                    Navegando
+                </h3>
+                <div class="space-y-2 text-sm mb-4">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Distancia:</span>
+                        <span id="nav-distance" class="font-bold text-gray-900">-</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Tiempo estimado:</span>
+                        <span id="nav-time" class="font-bold text-gray-900">-</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Nivel de riesgo:</span>
+                        <span id="nav-risk" class="font-bold">-</span>
+                    </div>
+                </div>
+                <button id="stop-route-btn"
+                        class="w-full bg-red-600 text-white font-bold py-3 rounded-xl hover:bg-red-700 transition-colors">
+                    <i class="fas fa-stop mr-2"></i>Finalizar Ruta
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mapa -->
+    <div class="map-wrapper">
+        <div id="map"></div>
+
+        <!-- Indicador de carga -->
+        <div id="map-loading" class="absolute top-4 right-4 bg-white rounded-lg shadow-lg px-4 py-2 z-[1000]">
+            <div class="flex items-center gap-2">
+                <i class="fas fa-spinner fa-spin text-red-600"></i>
+                <span class="text-sm font-medium">Cargando mapa...</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bottom Navigation -->
+<div class="bottom-nav">
+    <a href="{% url 'repartidor_home' %}" class="flex flex-col items-center text-red-600">
+        <i class="fas fa-home text-xl mb-1"></i>
+        <span class="text-xs font-medium">Inicio</span>
+    </a>
+    <a href="{% url 'solicitar_ayuda_psicologica' %}" class="flex flex-col items-center text-gray-600 hover:text-red-600 transition-colors">
+        <i class="fas fa-heart text-xl mb-1"></i>
+        <span class="text-xs font-medium">Ayuda</span>
+    </a>
+    <a href="{% url 'historial' %}" class="flex flex-col items-center text-gray-600 hover:text-red-600 transition-colors">
+        <i class="fas fa-history text-xl mb-1"></i>
+        <span class="text-xs font-medium">Historial</span>
+    </a>
+    <a href="{% url 'mi_perfil' %}" class="flex flex-col items-center text-gray-600 hover:text-red-600 transition-colors">
+        <i class="fas fa-user text-xl mb-1"></i>
+        <span class="text-xs font-medium">Perfil</span>
+    </a>
+</div>
+
+<!-- Modal de confirmación de cancelar alerta -->
+<div id="cancel-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center px-4">
+    <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+        <div class="text-center">
+            <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-exclamation-triangle text-yellow-600 text-xl"></i>
+            </div>
+            <h3 class="text-lg font-bold text-gray-900 mb-2">¿Cancelar alerta?</h3>
+            <p class="text-sm text-gray-600 mb-6">Esta acción no se puede deshacer</p>
+            <div class="flex gap-3">
+                <button onclick="closeAlertModal()"
+                        class="flex-1 px-4 py-2 border-2 border-gray-300 rounded-xl font-medium hover:bg-gray-50 transition-colors">
+                    No, mantener
+                </button>
+                <button onclick="confirmCancelAlert()"
+                        class="flex-1 px-4 py-2 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-colors">
+                    Sí, cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ============================================================================
+// VARIABLES GLOBALES
+// ============================================================================
+let map = null;
+let userMarker = null;
+let destinationMarker = null;
+let routeLayer = null;
+let currentPosition = null;
+let selectedDestination = null;
+let availableRoutes = null;
+let selectedRoute = null;
+let navigationActive = false;
+let watchId = null;
+let sosTimer = null;
+let sosPressed = false;
+let sosActivating = false;
+let currentAlertId = null;
+
+// ============================================================================
+// INICIALIZACIÓN
+// ============================================================================
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Iniciando aplicación...');
+    initMap();
+    initSearchBox();
+    initSOSButton();
+    initRouteControls();
+});
+
+// ============================================================================
+// INICIALIZAR MAPA
+// ============================================================================
+function initMap() {
+    console.log('🗺️ Inicializando mapa...');
+
+    // Esperar a que Leaflet esté disponible
+    if (typeof L === 'undefined') {
+        console.warn('⏳ Esperando a Leaflet...');
+        setTimeout(initMap, 100);
+        return;
+    }
+
+    try {
+        // Crear mapa centrado en CDMX por defecto
+        map = L.map('map').setView([19.4326, -99.1332], 13);
+
+        // Agregar tiles de OpenStreetMap
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        console.log('✅ Mapa creado exitosamente');
+
+        // Ocultar indicador de carga
+        setTimeout(() => {
+            document.getElementById('map-loading').style.display = 'none';
+        }, 500);
+
+        // Obtener ubicación del usuario
+        getUserLocation();
+
+        // Click en el mapa para seleccionar destino
+        map.on('click', function(e) {
+            if (!navigationActive) {
+                selectDestination(e.latlng.lat, e.latlng.lng);
+            }
+        });
+
+    } catch (error) {
+        console.error('❌ Error al crear mapa:', error);
+        document.getElementById('map-loading').innerHTML =
+            '<div class="flex items-center gap-2 text-red-600"><i class="fas fa-exclamation-circle"></i><span class="text-sm font-medium">Error al cargar mapa</span></div>';
+    }
+}
+
+// ============================================================================
+// OBTENER UBICACIÓN DEL USUARIO
+// ============================================================================
+function getUserLocation() {
+    console.log('📍 Obteniendo ubicación...');
+
+    if (!navigator.geolocation) {
+        console.error('❌ Geolocalización no soportada');
+        updateGPSStatus('error', 'GPS no disponible');
+        return;
+    }
+
+    updateGPSStatus('searching', 'Buscando GPS...');
+
+    navigator.geolocation.getCurrentPosition(
+        function(position) {
+            currentPosition = {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude
+            };
+
+            console.log('✅ Ubicación obtenida:', currentPosition);
+            updateGPSStatus('active', 'GPS activo');
+
+            // Centrar mapa en ubicación actual
+            map.setView([currentPosition.lat, currentPosition.lng], 15);
+
+            // Crear marcador de usuario
+            if (userMarker) {
+                map.removeLayer(userMarker);
+            }
+
+            userMarker = L.marker([currentPosition.lat, currentPosition.lng], {
+                icon: L.divIcon({
+                    className: 'user-location-marker',
+                    html: '<div style="width: 32px; height: 32px; background: #3b82f6; border: 4px solid white; border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>',
+                    iconSize: [32, 32]
+                })
+            }).addTo(map);
+        },
+        function(error) {
+            console.error('❌ Error de GPS:', error);
+            updateGPSStatus('error', 'Error de GPS');
+        },
+        {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+        }
+    );
+}
+
+function updateGPSStatus(status, text) {
+    const statusElement = document.getElementById('gps-status');
+    statusElement.textContent = text;
+
+    const colors = {
+        searching: 'text-yellow-600',
+        active: 'text-green-600',
+        error: 'text-red-600'
+    };
+
+    statusElement.className = colors[status] || 'text-gray-600';
+}
+
+// ============================================================================
+// BUSCADOR DE DIRECCIONES
+// ============================================================================
+function initSearchBox() {
+    const searchInput = document.getElementById('search-input');
+    const searchResults = document.getElementById('search-results');
+    let searchTimeout = null;
+
+    searchInput.addEventListener('input', function(e) {
+        const query = e.target.value.trim();
+
+        clearTimeout(searchTimeout);
+
+        if (query.length < 3) {
+            searchResults.classList.add('hidden');
+            return;
+        }
+
+        searchTimeout = setTimeout(() => {
+            searchLocation(query);
+        }, 500);
+    });
+
+    // Cerrar resultados al hacer clic fuera
+    document.addEventListener('click', function(e) {
+        if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+            searchResults.classList.add('hidden');
+        }
+    });
+}
+
+function searchLocation(query) {
+    console.log('🔍 Buscando:', query);
+
+    const searchResults = document.getElementById('search-results');
+    searchResults.innerHTML = '<div class="p-4 text-center text-sm text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i>Buscando...</div>';
+    searchResults.classList.remove('hidden');
+
+    // Usar Nominatim de OpenStreetMap para geocodificación
+    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`)
+        .then(response => response.json())
+        .then(results => {
+            if (results.length === 0) {
+                searchResults.innerHTML = '<div class="p-4 text-center text-sm text-gray-500">No se encontraron resultados</div>';
+                return;
+            }
+
+            searchResults.innerHTML = results.map(result => `
+                <div class="search-result-item" onclick='selectSearchResult(${result.lat}, ${result.lon}, "${result.display_name.replace(/'/g, "\\'")}");'>
+                    <div class="flex items-start gap-2">
+                        <i class="fas fa-map-marker-alt text-red-600 mt-1"></i>
+                        <div class="flex-1">
+                            <p class="text-sm font-medium text-gray-900">${result.display_name.split(',')[0]}</p>
+                            <p class="text-xs text-gray-500">${result.display_name}</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        })
+        .catch(error => {
+            console.error('❌ Error en búsqueda:', error);
+            searchResults.innerHTML = '<div class="p-4 text-center text-sm text-red-500">Error en la búsqueda</div>';
+        });
+}
+
+function selectSearchResult(lat, lng, name) {
+    console.log('📍 Destino seleccionado:', name);
+
+    document.getElementById('search-results').classList.add('hidden');
+    document.getElementById('search-input').value = name;
+
+    selectDestination(lat, lng, name);
+}
+
+// ============================================================================
+// SELECCIONAR DESTINO
+// ============================================================================
+function selectDestination(lat, lng, name = null) {
+    selectedDestination = { lat, lng, name };
+
+    console.log('🎯 Destino:', selectedDestination);
+
+    // Crear o actualizar marcador de destino
+    if (destinationMarker) {
+        map.removeLayer(destinationMarker);
+    }
+
+    destinationMarker = L.marker([lat, lng], {
+        icon: L.divIcon({
+            className: 'destination-marker',
+            html: '<div style="width: 32px; height: 32px; background: #dc2626; border: 4px solid white; border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>',
+            iconSize: [32, 32]
+        })
+    }).addTo(map);
+
+    // Ajustar vista para mostrar origen y destino
+    if (currentPosition) {
+        const bounds = L.latLngBounds(
+            [currentPosition.lat, currentPosition.lng],
+            [lat, lng]
+        );
+        map.fitBounds(bounds, { padding: [50, 50] });
+
+        // Calcular rutas
+        calculateRoutes();
+    }
+}
+
+// ============================================================================
+// CALCULAR RUTAS
+// ============================================================================
+function calculateRoutes() {
+    if (!currentPosition || !selectedDestination) {
+        console.warn('⚠️ Falta origen o destino');
+        return;
+    }
+
+    console.log('🛣️ Calculando rutas...');
+
+    // Mostrar loading
+    document.getElementById('routes-container').classList.remove('hidden');
+    document.getElementById('routes-list').innerHTML = `
+        <div class="text-center py-8 text-gray-500">
+            <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+            <p class="text-sm">Calculando rutas seguras...</p>
+        </div>
+    `;
+
+    fetch('{% url "calcular_rutas" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': window.RappiSafe.csrfToken
+        },
+        body: JSON.stringify({
+            origen_lat: currentPosition.lat,
+            origen_lon: currentPosition.lng,
+            destino_lat: selectedDestination.lat,
+            destino_lon: selectedDestination.lng
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            console.log('✅ Rutas calculadas:', data.rutas);
+            availableRoutes = data.rutas;
+            displayRoutes(data.rutas);
+        } else {
+            throw new Error(data.error || 'Error al calcular rutas');
+        }
+    })
+    .catch(error => {
+        console.error('❌ Error:', error);
+        document.getElementById('routes-list').innerHTML = `
+            <div class="text-center py-8 text-red-500">
+                <i class="fas fa-exclamation-circle text-2xl mb-2"></i>
+                <p class="text-sm">Error al calcular rutas</p>
+            </div>
+        `;
+    });
+}
+
+// ============================================================================
+// MOSTRAR RUTAS
+// ============================================================================
+function displayRoutes(routes) {
+    const routesList = document.getElementById('routes-list');
+
+    const routeTypes = [
+        { key: 'rapida', name: 'Ruta Rápida', icon: 'bolt', color: 'red', desc: 'Menor tiempo' },
+        { key: 'segura1', name: 'Ruta Segura', icon: 'shield-alt', color: 'green', desc: 'Recomendada' },
+        { key: 'segura2', name: 'Ruta Más Segura', icon: 'shield-alt', color: 'green', desc: 'Mayor seguridad' }
+    ];
+
+    let html = '';
+
+    routeTypes.forEach((type, index) => {
+        let route;
+        if (type.key === 'rapida') {
+            route = routes.rapida;
+        } else if (type.key === 'segura1') {
+            route = routes.seguras[0];
+        } else {
+            route = routes.seguras[1];
+        }
+
+        const riskBadge = route.puntuacion_riesgo < 5 ? 'badge-success' :
+                         route.puntuacion_riesgo < 7 ? 'badge-warning' : 'badge-danger';
+
+        html += `
+            <div class="route-card" onclick="selectRoute('${type.key}', ${index})" id="route-${index}">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-${type.color}-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-${type.icon} text-${type.color}-600"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-gray-900">${type.name}</h4>
+                            <p class="text-xs text-gray-500">${type.desc}</p>
+                        </div>
+                    </div>
+                    <span class="badge ${riskBadge}">
+                        Riesgo: ${route.puntuacion_riesgo}
+                    </span>
+                </div>
+                <div class="flex gap-4 text-sm text-gray-600">
+                    <div class="flex items-center gap-1">
+                        <i class="fas fa-road"></i>
+                        <span>${route.distancia} km</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <i class="fas fa-clock"></i>
+                        <span>${route.duracion} min</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    routesList.innerHTML = html;
+
+    // Seleccionar automáticamente la primera ruta segura
+    selectRoute('segura1', 1);
+}
+
+// ============================================================================
+// SELECCIONAR RUTA
+// ============================================================================
+function selectRoute(type, index) {
+    console.log('🛣️ Ruta seleccionada:', type);
+
+    // Actualizar UI
+    document.querySelectorAll('.route-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    document.getElementById(`route-${index}`).classList.add('selected');
+
+    // Guardar ruta seleccionada
+    if (type === 'rapida') {
+        selectedRoute = availableRoutes.rapida;
+    } else if (type === 'segura1') {
+        selectedRoute = availableRoutes.seguras[0];
+    } else {
+        selectedRoute = availableRoutes.seguras[1];
+    }
+
+    // Dibujar ruta en el mapa
+    if (routeLayer) {
+        map.removeLayer(routeLayer);
+    }
+
+    const color = type === 'rapida' ? '#dc2626' : '#16a34a';
+
+    routeLayer = L.polyline(selectedRoute.coordenadas, {
+        color: color,
+        weight: 5,
+        opacity: 0.7
+    }).addTo(map);
+
+    // Ajustar vista
+    map.fitBounds(routeLayer.getBounds(), { padding: [50, 50] });
+
+    // Habilitar botón de iniciar ruta
+    document.getElementById('start-route-btn').disabled = false;
+}
+
+// ============================================================================
+// CONTROLES DE RUTA
+// ============================================================================
+function initRouteControls() {
+    document.getElementById('start-route-btn').addEventListener('click', startNavigation);
+    document.getElementById('stop-route-btn').addEventListener('click', stopNavigation);
+}
+
+function startNavigation() {
+    if (!selectedRoute) return;
+
+    console.log('🚀 Iniciando navegación');
+
+    navigationActive = true;
+
+    // Actualizar UI
+    document.getElementById('routes-container').classList.add('hidden');
+    document.getElementById('active-navigation').classList.remove('hidden');
+    document.getElementById('status-badge').innerHTML = '<i class="fas fa-circle text-xs mr-1"></i> En ruta';
+    document.getElementById('status-badge').className = 'badge badge-success';
+
+    // Mostrar información de la ruta
+    document.getElementById('nav-distance').textContent = selectedRoute.distancia + ' km';
+    document.getElementById('nav-time').textContent = selectedRoute.duracion + ' min';
+
+    const riskColor = selectedRoute.puntuacion_riesgo < 5 ? 'text-green-600' :
+                     selectedRoute.puntuacion_riesgo < 7 ? 'text-yellow-600' : 'text-red-600';
+    document.getElementById('nav-risk').innerHTML = `<span class="${riskColor}">${selectedRoute.puntuacion_riesgo}/10</span>`;
+
+    // Habilitar botón SOS
+    enableSOSButton();
+
+    // Iniciar seguimiento GPS
+    startTracking();
+}
+
+function stopNavigation() {
+    console.log('🛑 Finalizando navegación');
+
+    navigationActive = false;
+
+    // Detener seguimiento GPS
+    if (watchId) {
+        navigator.geolocation.clearWatch(watchId);
+        watchId = null;
+    }
+
+    // Actualizar UI
+    document.getElementById('active-navigation').classList.add('hidden');
+    document.getElementById('routes-container').classList.remove('hidden');
+    document.getElementById('status-badge').innerHTML = '<i class="fas fa-circle text-xs mr-1"></i> Sin ruta';
+    document.getElementById('status-badge').className = 'badge badge-warning';
+
+    // Deshabilitar botón SOS
+    disableSOSButton();
+}
+
+function startTracking() {
+    if (!navigator.geolocation) return;
+
+    watchId = navigator.geolocation.watchPosition(
+        function(position) {
+            currentPosition = {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude
+            };
+
+            // Actualizar marcador de usuario
+            if (userMarker) {
+                userMarker.setLatLng([currentPosition.lat, currentPosition.lng]);
+            }
+
+            // Centrar mapa en posición actual
+            map.setView([currentPosition.lat, currentPosition.lng], 16);
+        },
+        function(error) {
+            console.error('❌ Error de tracking:', error);
+        },
+        {
+            enableHighAccuracy: true,
+            maximumAge: 0,
+            timeout: 5000
+        }
+    );
+}
+
+// ============================================================================
+// BOTÓN SOS
+// ============================================================================
+function initSOSButton() {
+    const sosButton = document.getElementById('sos-button');
+
+    // Eventos de mouse
+    sosButton.addEventListener('mousedown', startSOSPress);
+    sosButton.addEventListener('mouseup', cancelSOSPress);
+    sosButton.addEventListener('mouseleave', function(e) {
+        if (sosPressed) {
+            cancelSOSPress(e);
+        }
+    });
+
+    // Eventos de touch
+    sosButton.addEventListener('touchstart', startSOSPress, { passive: false });
+    sosButton.addEventListener('touchend', cancelSOSPress, { passive: false });
+    sosButton.addEventListener('touchcancel', cancelSOSPress, { passive: false });
+
+    // Prevenir menú contextual
+    sosButton.addEventListener('contextmenu', e => e.preventDefault());
+}
+
+function enableSOSButton() {
+    const sosButton = document.getElementById('sos-button');
+    sosButton.disabled = false;
+    document.getElementById('sos-status').textContent = 'Mantén presionado 3s';
+    document.getElementById('sos-status').className = 'text-xs text-gray-600 mt-2';
+    console.log('✅ Botón SOS habilitado');
+}
+
+function disableSOSButton() {
+    const sosButton = document.getElementById('sos-button');
+    sosButton.disabled = true;
+    document.getElementById('sos-status').textContent = 'Requiere ruta activa';
+    document.getElementById('sos-status').className = 'text-xs text-gray-400 mt-2';
+    console.log('⛔ Botón SOS deshabilitado');
+}
+
+function startSOSPress(e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!navigationActive) {
+        console.warn('⚠️ No se puede activar SOS sin navegación activa');
+        return;
+    }
+
+    if (sosActivating) {
+        console.warn('⚠️ SOS ya está activándose');
+        return;
+    }
+
+    sosPressed = true;
+    console.log('⏱️ Iniciando cuenta regresiva SOS - Mantén presionado...');
+
+    const progressRing = document.querySelector('.progress-ring');
+    const progressCircle = document.querySelector('.progress-ring__circle');
+
+    progressRing.classList.remove('hidden');
+    progressCircle.style.strokeDashoffset = '0';
+
+    document.getElementById('sos-instruction').textContent = 'Manteniendo...';
+    document.getElementById('sos-instruction').className = 'text-sm text-yellow-600 mt-4 font-bold';
+
+    // Iniciar timer
+    sosTimer = setTimeout(function() {
+        console.log('✅ 3 segundos completados - Activando SOS');
+        activateSOS();
+    }, 3000);
+
+    // Log cada segundo para debugging
+    setTimeout(() => console.log('⏱️ 1 segundo...'), 1000);
+    setTimeout(() => console.log('⏱️ 2 segundos...'), 2000);
+    setTimeout(() => console.log('⏱️ 3 segundos - ¡ACTIVANDO!'), 3000);
+}
+
+function cancelSOSPress(e) {
+    if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    if (!sosPressed) return;
+
+    const duration = sosTimer ? Date.now() : 0;
+    console.log('❌ SOS cancelado - Soltado antes de tiempo');
+
+    sosPressed = false;
+
+    if (sosTimer) {
+        clearTimeout(sosTimer);
+        sosTimer = null;
+    }
+
+    if (sosActivating) {
+        return; // No cancelar si ya está activando
+    }
+
+    const progressRing = document.querySelector('.progress-ring');
+    const progressCircle = document.querySelector('.progress-ring__circle');
+
+    progressRing.classList.add('hidden');
+    progressCircle.style.strokeDashoffset = '395.84';
+
+    document.getElementById('sos-instruction').textContent = 'Mantén presionado 3s para activar';
+    document.getElementById('sos-instruction').className = 'text-sm text-gray-500 mt-4';
+}
+
+function activateSOS() {
+    console.log('🚨 ACTIVANDO SOS - Enviando alerta...');
+
+    sosActivating = true;
+    sosPressed = false;
+
+    // Limpiar timer
+    if (sosTimer) {
+        clearTimeout(sosTimer);
+        sosTimer = null;
+    }
+
+    // Mantener el círculo de progreso visible
+    const progressRing = document.querySelector('.progress-ring');
+    progressRing.classList.remove('hidden');
+
+    document.getElementById('sos-instruction').textContent = 'Enviando alerta...';
+    document.getElementById('sos-instruction').className = 'text-sm text-red-600 mt-4 font-bold';
+
+    navigator.geolocation.getCurrentPosition(
+        function(position) {
+            console.log('📍 Ubicación obtenida:', position.coords.latitude, position.coords.longitude);
+
+            const alertData = {
+                latitud: position.coords.latitude,
+                longitud: position.coords.longitude,
+                bateria: {% if perfil.nivel_bateria %}{{ perfil.nivel_bateria }}{% else %}100{% endif %},
+                datos_sensores: {}
+            };
+
+            console.log('📤 Enviando alerta:', alertData);
+
+            fetch('{% url "crear_alerta_panico" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': window.RappiSafe.csrfToken
+                },
+                body: JSON.stringify(alertData)
+            })
+            .then(response => {
+                console.log('📥 Respuesta recibida:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('📊 Datos de respuesta:', data);
+
+                if (data.success) {
+                    console.log('✅ ¡ALERTA SOS ACTIVADA EXITOSAMENTE!');
+                    document.getElementById('sos-instruction').textContent = '¡Alerta activada!';
+                    document.getElementById('sos-instruction').className = 'text-sm text-green-600 mt-4 font-bold';
+
+                    // Mostrar mensaje de éxito
+                    alert('¡Alerta SOS activada! Los operadores han sido notificados.');
+
+                    // Recargar después de 2 segundos
+                    setTimeout(() => {
+                        console.log('🔄 Recargando página...');
+                        location.reload();
+                    }, 2000);
+                } else {
+                    throw new Error(data.error || 'Error desconocido al activar SOS');
+                }
+            })
+            .catch(error => {
+                console.error('❌ Error al activar SOS:', error);
+                document.getElementById('sos-instruction').textContent = 'Error: ' + error.message;
+                document.getElementById('sos-instruction').className = 'text-sm text-red-600 mt-4';
+
+                alert('Error al enviar alerta SOS: ' + error.message);
+
+                // Resetear estado
+                sosActivating = false;
+                const progressRing = document.querySelector('.progress-ring');
+                progressRing.classList.add('hidden');
+
+                setTimeout(() => {
+                    document.getElementById('sos-instruction').textContent = 'Mantén presionado 3s para activar';
+                    document.getElementById('sos-instruction').className = 'text-sm text-gray-500 mt-4';
+                }, 3000);
+            });
+        },
+        function(error) {
+            console.error('❌ Error de GPS al activar SOS:', error);
+            document.getElementById('sos-instruction').textContent = 'Error de GPS';
+            document.getElementById('sos-instruction').className = 'text-sm text-red-600 mt-4';
+
+            alert('Error al obtener ubicación GPS');
+
+            // Resetear estado
+            sosActivating = false;
+            const progressRing = document.querySelector('.progress-ring');
+            progressRing.classList.add('hidden');
+
+            setTimeout(() => {
+                document.getElementById('sos-instruction').textContent = 'Mantén presionado 3s para activar';
+                document.getElementById('sos-instruction').className = 'text-sm text-gray-500 mt-4';
+            }, 3000);
+        },
+        {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+        }
+    );
+}
+
+// ============================================================================
+// ALERTAS
+// ============================================================================
+function cancelarAlerta(id) {
+    currentAlertId = id;
+    document.getElementById('cancel-modal').classList.remove('hidden');
+}
+
+function closeAlertModal() {
+    document.getElementById('cancel-modal').classList.add('hidden');
+}
+
+function confirmCancelAlert() {
+    fetch(`/repartidor/alerta/${currentAlertId}/cancelar/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': window.RappiSafe.csrfToken
+        }
+    })
+    .then(() => {
+        console.log('✅ Alerta cancelada');
+        location.reload();
+    })
+    .catch(error => {
+        console.error('❌ Error al cancelar alerta:', error);
+        closeAlertModal();
+    });
+}
+
+console.log('✅ Aplicación cargada correctamente');
+</script>
+{% endblock %}

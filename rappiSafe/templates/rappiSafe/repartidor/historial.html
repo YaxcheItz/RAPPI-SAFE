@@ -1,0 +1,282 @@
+{% extends 'rappiSafe/base.html' %}
+{% load static %}
+
+{% block title %}Historial - Rappi Safe{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto pb-20">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">Mi Historial</h1>
+        <p class="text-gray-500">Revisa tus alertas y solicitudes de ayuda pasadas</p>
+    </div>
+
+    <!-- Estadísticas rápidas -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div class="card">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center">
+                    <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-gray-900">{{ total_alertas }}</p>
+                    <p class="text-xs text-gray-500">Total Alertas</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
+                    <i class="fas fa-check-circle text-green-600 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-gray-900">{{ alertas_resueltas }}</p>
+                    <p class="text-xs text-gray-500">Resueltas</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center">
+                    <i class="fas fa-heart text-purple-600 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-gray-900">{{ total_solicitudes }}</p>
+                    <p class="text-xs text-gray-500">Solicitudes Ayuda</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
+                    <i class="fas fa-user-check text-blue-600 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-gray-900">{{ solicitudes_atendidas }}</p>
+                    <p class="text-xs text-gray-500">Atendidas</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex gap-2 mb-6 border-b border-gray-200">
+        <button onclick="showTab('alertas')" id="tab-alertas" class="px-6 py-3 font-medium text-rappi-red border-b-2 border-rappi-red">
+            <i class="fas fa-bell mr-2"></i>Alertas
+        </button>
+        <button onclick="showTab('ayuda')" id="tab-ayuda" class="px-6 py-3 font-medium text-gray-600 hover:text-rappi-red transition-colors">
+            <i class="fas fa-heart mr-2"></i>Ayuda Psicológica
+        </button>
+    </div>
+
+    <!-- Tab Content: Alertas -->
+    <div id="content-alertas" class="space-y-4">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">Historial de Alertas</h2>
+
+        {% if alertas %}
+            {% for alerta in alertas %}
+            <div class="card hover:shadow-lg transition-shadow">
+                <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="w-10 h-10 rounded-lg {% if alerta.tipo == 'panico' %}bg-red-100{% else %}bg-amber-100{% endif %} flex items-center justify-center">
+                                <i class="fas {% if alerta.tipo == 'panico' %}fa-hand-paper text-red-600{% else %}fa-car-crash text-amber-600{% endif %}"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-gray-900">{{ alerta.get_tipo_display }}</h3>
+                                <p class="text-sm text-gray-500">{{ alerta.creado_en|date:"d/m/Y H:i" }}</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                            <div>
+                                <p class="text-gray-500">Estado</p>
+                                <span class="badge {% if alerta.estado == 'resuelta' %}badge-success{% elif alerta.estado == 'en_atencion' %}badge-warning{% else %}badge-danger{% endif %} mt-1">
+                                    {{ alerta.get_estado_display }}
+                                </span>
+                            </div>
+                            <div>
+                                <p class="text-gray-500">Ubicación</p>
+                                <p class="font-medium text-gray-900">{{ alerta.latitud|floatformat:4 }}, {{ alerta.longitud|floatformat:4 }}</p>
+                            </div>
+                            {% if alerta.atendido_por %}
+                            <div>
+                                <p class="text-gray-500">Atendido por</p>
+                                <p class="font-medium text-gray-900">{{ alerta.atendido_por.get_full_name }}</p>
+                            </div>
+                            {% endif %}
+                            {% if alerta.resuelto_en %}
+                            <div>
+                                <p class="text-gray-500">Resuelto</p>
+                                <p class="font-medium text-gray-900">{{ alerta.resuelto_en|date:"H:i" }}</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+
+            <!-- Paginación Alertas -->
+            {% if alertas.has_other_pages %}
+            <div class="flex justify-center gap-2 mt-6">
+                {% if alertas.has_previous %}
+                <a href="?page_alertas={{ alertas.previous_page_number }}" class="btn-secondary">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+                {% endif %}
+                <span class="px-4 py-2 text-gray-700">Página {{ alertas.number }} de {{ alertas.paginator.num_pages }}</span>
+                {% if alertas.has_next %}
+                <a href="?page_alertas={{ alertas.next_page_number }}" class="btn-secondary">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+        {% else %}
+            <div class="card text-center py-12">
+                <div class="status-icon-info mx-auto mb-4">
+                    <i class="fas fa-inbox text-2xl"></i>
+                </div>
+                <p class="text-gray-600">No tienes alertas registradas</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Tab Content: Ayuda Psicológica -->
+    <div id="content-ayuda" class="hidden space-y-4">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-semibold text-gray-900">Solicitudes de Ayuda Psicológica</h2>
+            <a href="{% url 'solicitar_ayuda_psicologica' %}" class="btn-primary text-sm">
+                <i class="fas fa-plus mr-2"></i>Nueva Solicitud
+            </a>
+        </div>
+
+        {% if solicitudes_ayuda %}
+            {% for solicitud in solicitudes_ayuda %}
+            <div class="card hover:shadow-lg transition-shadow">
+                <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                                <i class="fas fa-heart text-purple-600"></i>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex items-center justify-between">
+                                    <h3 class="font-semibold text-gray-900">Solicitud de Ayuda</h3>
+                                    <span class="badge {% if solicitud.atendida %}badge-success{% else %}badge-warning{% endif %}">
+                                        {% if solicitud.atendida %}Atendida{% else %}Pendiente{% endif %}
+                                    </span>
+                                </div>
+                                <p class="text-sm text-gray-500">{{ solicitud.creado_en|date:"d/m/Y H:i" }}</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-50 rounded-xl p-4 mb-3">
+                            <p class="text-sm text-gray-700">{{ solicitud.descripcion }}</p>
+                        </div>
+
+                        <div class="flex items-center gap-4 text-sm">
+                            <div class="flex items-center gap-2">
+                                <span class="text-gray-500">Urgencia:</span>
+                                <div class="flex gap-1">
+                                    {% for i in "12345678910"|make_list %}
+                                        <div class="w-2 h-4 rounded {% if forloop.counter <= solicitud.urgencia %}bg-red-500{% else %}bg-gray-200{% endif %}"></div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% if solicitud.atendida and solicitud.fecha_atencion %}
+                            <div>
+                                <span class="text-gray-500">Atendida:</span>
+                                <span class="font-medium text-gray-900">{{ solicitud.fecha_atencion|date:"d/m/Y" }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+
+            <!-- Paginación Solicitudes -->
+            {% if solicitudes_ayuda.has_other_pages %}
+            <div class="flex justify-center gap-2 mt-6">
+                {% if solicitudes_ayuda.has_previous %}
+                <a href="?page_solicitudes={{ solicitudes_ayuda.previous_page_number }}" class="btn-secondary">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+                {% endif %}
+                <span class="px-4 py-2 text-gray-700">Página {{ solicitudes_ayuda.number }} de {{ solicitudes_ayuda.paginator.num_pages }}</span>
+                {% if solicitudes_ayuda.has_next %}
+                <a href="?page_solicitudes={{ solicitudes_ayuda.next_page_number }}" class="btn-secondary">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+        {% else %}
+            <div class="card text-center py-12">
+                <div class="status-icon-info mx-auto mb-4">
+                    <i class="fas fa-heart text-2xl"></i>
+                </div>
+                <p class="text-gray-600 mb-4">No tienes solicitudes de ayuda registradas</p>
+                <a href="{% url 'solicitar_ayuda_psicologica' %}" class="btn-primary">
+                    <i class="fas fa-plus mr-2"></i>Solicitar Ayuda
+                </a>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Bottom Navigation Bar -->
+    <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex items-center justify-around h-16">
+                <a href="{% url 'repartidor_home' %}" class="flex flex-col items-center justify-center flex-1 text-gray-600 hover:text-rappi-red transition-colors">
+                    <i class="fas fa-home text-xl mb-1"></i>
+                    <span class="text-xs font-medium">Inicio</span>
+                </a>
+
+                <a href="{% url 'solicitar_ayuda_psicologica' %}" class="flex flex-col items-center justify-center flex-1 text-gray-600 hover:text-rappi-red transition-colors">
+                    <i class="fas fa-heart text-xl mb-1"></i>
+                    <span class="text-xs font-medium">Ayuda</span>
+                </a>
+
+                <a href="{% url 'historial' %}" class="flex flex-col items-center justify-center flex-1 text-rappi-red">
+                    <i class="fas fa-history text-xl mb-1"></i>
+                    <span class="text-xs font-medium">Historial</span>
+                </a>
+
+                <a href="{% url 'mi_perfil' %}" class="flex flex-col items-center justify-center flex-1 text-gray-600 hover:text-rappi-red transition-colors">
+                    <i class="fas fa-user text-xl mb-1"></i>
+                    <span class="text-xs font-medium">Mi Perfil</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function showTab(tab) {
+        // Ocultar todos los contenidos
+        document.getElementById('content-alertas').classList.add('hidden');
+        document.getElementById('content-ayuda').classList.add('hidden');
+
+        // Remover estilos activos de los tabs
+        document.getElementById('tab-alertas').className = 'px-6 py-3 font-medium text-gray-600 hover:text-rappi-red transition-colors';
+        document.getElementById('tab-ayuda').className = 'px-6 py-3 font-medium text-gray-600 hover:text-rappi-red transition-colors';
+
+        // Mostrar contenido seleccionado
+        if (tab === 'alertas') {
+            document.getElementById('content-alertas').classList.remove('hidden');
+            document.getElementById('tab-alertas').className = 'px-6 py-3 font-medium text-rappi-red border-b-2 border-rappi-red';
+        } else {
+            document.getElementById('content-ayuda').classList.remove('hidden');
+            document.getElementById('tab-ayuda').className = 'px-6 py-3 font-medium text-rappi-red border-b-2 border-rappi-red';
+        }
+    }
+</script>
+{% endblock %}
