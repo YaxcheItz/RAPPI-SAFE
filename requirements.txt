@@ -1,0 +1,24 @@
+# Django y core
+Django==5.2.8
+django-cors-headers==4.3.1
+whitenoise==6.6.0
+
+# Channels para WebSockets
+channels==4.0.0
+channels-redis==4.1.0
+daphne==4.0.0
+
+# Utilidades
+Pillow==10.2.0
+python-dotenv==1.0.0
+pytz==2024.1
+
+# Para reportes PDF
+reportlab==4.0.9
+weasyprint==60.2
+
+# Para validación de números telefónicos
+phonenumbers==8.13.27
+
+# Para desarrollo
+django-debug-toolbar==4.2.0

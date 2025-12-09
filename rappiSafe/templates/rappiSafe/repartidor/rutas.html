@@ -1,0 +1,405 @@
+{% extends 'rappiSafe/base.html' %}
+{% load static %}
+
+{% block title %}Rutas Seguras - Rappi Safe{% endblock %}
+
+{% block main_class %}h-screen flex flex-col{% endblock %}
+
+{% block content %}
+<div class="flex-1 flex flex-col overflow-hidden bg-white">
+    <!-- Header -->
+    <div class="header px-4 py-4">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Rutas Seguras</h1>
+                <p class="text-sm text-gray-500">Compara rutas y elige la más segura</p>
+            </div>
+            <a href="{% url 'repartidor_home' %}" class="link">
+                <i class="fas fa-arrow-left"></i>
+                Volver
+            </a>
+        </div>
+    </div>
+
+    <!-- Contenido principal -->
+    <div class="flex-1 flex flex-col md:flex-row overflow-hidden">
+        <!-- Panel lateral -->
+        <div class="w-full md:w-96 bg-white border-r border-gray-100 flex flex-col overflow-y-auto">
+            <div class="p-4 space-y-4">
+                <!-- Formulario de búsqueda -->
+                <div class="card">
+                    <h3 class="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-lg bg-rappi-red/10 flex items-center justify-center">
+                            <i class="fas fa-search text-rappi-red text-sm"></i>
+                        </div>
+                        Buscar Ruta
+                    </h3>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-900 mb-2 flex items-center gap-2">
+                                <i class="fas fa-map-marker-alt text-blue-600"></i>
+                                Origen
+                            </label>
+                            <input type="text" id="origen-input" placeholder="Tu ubicación actual"
+                                   class="input text-sm" readonly>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-900 mb-2 flex items-center gap-2">
+                                <i class="fas fa-flag text-red-600"></i>
+                                Destino
+                            </label>
+                            <input type="text" id="destino-input" placeholder="Haz clic en el mapa para seleccionar"
+                                   class="input text-sm">
+                            <input type="hidden" id="destino-lat">
+                            <input type="hidden" id="destino-lon">
+                            <p class="text-xs text-gray-500 mt-2">
+                                <i class="fas fa-info-circle"></i>
+                                Haz clic en cualquier punto del mapa
+                            </p>
+                        </div>
+
+                        <button onclick="buscarRutas()" class="w-full btn-primary">
+                            <i class="fas fa-route mr-2"></i>Buscar Rutas
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Resultados de rutas -->
+                <div id="rutas-container" class="hidden space-y-3">
+                    <h3 class="font-semibold text-gray-900 flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center">
+                            <i class="fas fa-route text-green-600 text-sm"></i>
+                        </div>
+                        Rutas Disponibles
+                    </h3>
+
+                    <!-- Ruta Rápida -->
+                    <div id="ruta-rapida" class="card-interactive border-2"
+                         onclick="seleccionarRuta('rapida')">
+                        <div class="flex items-start justify-between mb-3">
+                            <div class="flex items-center gap-2">
+                                <div class="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center">
+                                    <i class="fas fa-bolt text-red-600"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold text-gray-900">Ruta Rápida</h4>
+                                    <p class="text-xs text-gray-500">Menor tiempo</p>
+                                </div>
+                            </div>
+                            <span class="badge badge-danger" id="riesgo-rapida">-</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 text-sm">
+                            <div class="flex items-center gap-2 text-gray-600">
+                                <i class="fas fa-road text-gray-400"></i>
+                                <span id="distancia-rapida">-</span> km
+                            </div>
+                            <div class="flex items-center gap-2 text-gray-600">
+                                <i class="fas fa-clock text-gray-400"></i>
+                                <span id="tiempo-rapida">-</span> min
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Ruta Segura 1 -->
+                    <div id="ruta-segura-1" class="card-interactive border-2"
+                         onclick="seleccionarRuta('segura1')">
+                        <div class="flex items-start justify-between mb-3">
+                            <div class="flex items-center gap-2">
+                                <div class="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
+                                    <i class="fas fa-shield-alt text-green-600"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold text-gray-900">Ruta Segura 1</h4>
+                                    <p class="text-xs text-gray-500">Recomendada</p>
+                                </div>
+                            </div>
+                            <span class="badge badge-success" id="riesgo-segura1">-</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 text-sm">
+                            <div class="flex items-center gap-2 text-gray-600">
+                                <i class="fas fa-road text-gray-400"></i>
+                                <span id="distancia-segura1">-</span> km
+                            </div>
+                            <div class="flex items-center gap-2 text-gray-600">
+                                <i class="fas fa-clock text-gray-400"></i>
+                                <span id="tiempo-segura1">-</span> min
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Ruta Segura 2 -->
+                    <div id="ruta-segura-2" class="card-interactive border-2"
+                         onclick="seleccionarRuta('segura2')">
+                        <div class="flex items-start justify-between mb-3">
+                            <div class="flex items-center gap-2">
+                                <div class="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
+                                    <i class="fas fa-shield-alt text-green-700"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold text-gray-900">Ruta Segura 2</h4>
+                                    <p class="text-xs text-gray-500">Más segura</p>
+                                </div>
+                            </div>
+                            <span class="badge badge-success" id="riesgo-segura2">-</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 text-sm">
+                            <div class="flex items-center gap-2 text-gray-600">
+                                <i class="fas fa-road text-gray-400"></i>
+                                <span id="distancia-segura2">-</span> km
+                            </div>
+                            <div class="flex items-center gap-2 text-gray-600">
+                                <i class="fas fa-clock text-gray-400"></i>
+                                <span id="tiempo-segura2">-</span> min
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onclick="iniciarNavegacion()" class="w-full btn-success">
+                        <i class="fas fa-play mr-2"></i>Iniciar Navegación
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mapa -->
+        <div class="flex-1 relative">
+            <div id="map" class="w-full h-full"></div>
+
+            <!-- Indicador de ubicación actual -->
+            <div class="absolute top-4 right-4 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg px-4 py-3 border border-gray-100">
+                <div class="flex items-center gap-2">
+                    <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                    <span id="ubicacion-status" class="text-sm font-medium text-gray-700">Obteniendo ubicación...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let map;
+    let ubicacionActual = null;
+    let destinoSeleccionado = null;
+    let rutasCalculadas = null;
+    let rutaActualLayer = null;
+    let markerOrigen = null;
+    let markerDestino = null;
+
+    // Inicializar mapa
+    function initMap() {
+        // Centrar en Ciudad de México por defecto
+        map = L.map('map').setView([19.4326, -99.1332], 13);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors',
+            maxZoom: 19
+        }).addTo(map);
+
+        // Obtener ubicación actual
+        obtenerUbicacionActual();
+
+        // Click en el mapa para seleccionar destino
+        map.on('click', function(e) {
+            seleccionarDestinoEnMapa(e.latlng.lat, e.latlng.lng);
+        });
+    }
+
+    // Obtener ubicación actual del usuario
+    function obtenerUbicacionActual() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    ubicacionActual = {
+                        lat: position.coords.latitude,
+                        lon: position.coords.longitude
+                    };
+
+                    // Centrar mapa en ubicación actual
+                    map.setView([ubicacionActual.lat, ubicacionActual.lon], 15);
+
+                    // Agregar marcador de origen
+                    if (markerOrigen) {
+                        map.removeLayer(markerOrigen);
+                    }
+
+                    markerOrigen = L.marker([ubicacionActual.lat, ubicacionActual.lon], {
+                        icon: L.divIcon({
+                            className: 'custom-marker',
+                            html: '<div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center shadow-lg border-2 border-white"><i class="fas fa-user text-white"></i></div>',
+                            iconSize: [40, 40]
+                        })
+                    }).addTo(map).bindPopup('Tu ubicación actual');
+
+                    document.getElementById('origen-input').value = `${ubicacionActual.lat.toFixed(6)}, ${ubicacionActual.lon.toFixed(6)}`;
+                    document.getElementById('ubicacion-status').textContent = 'Ubicación obtenida';
+                },
+                (error) => {
+                    document.getElementById('ubicacion-status').textContent = 'Error al obtener ubicación';
+                    console.error('Error de geolocalización:', error);
+                }
+            );
+        } else {
+            document.getElementById('ubicacion-status').textContent = 'Geolocalización no soportada';
+        }
+    }
+
+    // Seleccionar destino haciendo click en el mapa
+    function seleccionarDestinoEnMapa(lat, lon) {
+        destinoSeleccionado = { lat, lon };
+
+        // Actualizar input
+        document.getElementById('destino-input').value = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+        document.getElementById('destino-lat').value = lat;
+        document.getElementById('destino-lon').value = lon;
+
+        // Agregar/actualizar marcador de destino
+        if (markerDestino) {
+            map.removeLayer(markerDestino);
+        }
+
+        markerDestino = L.marker([lat, lon], {
+            icon: L.divIcon({
+                className: 'custom-marker',
+                html: '<div class="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center shadow-lg border-2 border-white"><i class="fas fa-flag text-white"></i></div>',
+                iconSize: [40, 40]
+            })
+        }).addTo(map).bindPopup('Destino seleccionado');
+    }
+
+    // Buscar rutas
+    function buscarRutas() {
+        if (!ubicacionActual) {
+            alert('Esperando ubicación actual...');
+            return;
+        }
+
+        if (!destinoSeleccionado) {
+            alert('Por favor selecciona un destino haciendo clic en el mapa');
+            return;
+        }
+
+        // Mostrar loading
+        const btn = event.target;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Calculando rutas...';
+
+        fetch('{% url "calcular_rutas" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': window.RappiSafe.csrfToken
+            },
+            body: JSON.stringify({
+                origen_lat: ubicacionActual.lat,
+                origen_lon: ubicacionActual.lon,
+                destino_lat: destinoSeleccionado.lat,
+                destino_lon: destinoSeleccionado.lon
+            })
+        })
+        .then(response => response.json())
+        .then(result => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-route mr-2"></i>Buscar Rutas';
+
+            if (result.success) {
+                rutasCalculadas = result.rutas;
+                mostrarRutas(result.rutas);
+            } else {
+                alert('Error al calcular rutas: ' + result.error);
+            }
+        })
+        .catch(error => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-route mr-2"></i>Buscar Rutas';
+            console.error('Error:', error);
+            alert('Error al calcular rutas');
+        });
+    }
+
+    // Mostrar rutas en el panel
+    function mostrarRutas(rutas) {
+        document.getElementById('rutas-container').classList.remove('hidden');
+
+        // Ruta rápida
+        document.getElementById('distancia-rapida').textContent = rutas.rapida.distancia;
+        document.getElementById('tiempo-rapida').textContent = rutas.rapida.duracion;
+        document.getElementById('riesgo-rapida').textContent = `Riesgo: ${rutas.rapida.puntuacion_riesgo}`;
+
+        // Ruta segura 1
+        document.getElementById('distancia-segura1').textContent = rutas.seguras[0].distancia;
+        document.getElementById('tiempo-segura1').textContent = rutas.seguras[0].duracion;
+        document.getElementById('riesgo-segura1').textContent = `Riesgo: ${rutas.seguras[0].puntuacion_riesgo}`;
+
+        // Ruta segura 2
+        document.getElementById('distancia-segura2').textContent = rutas.seguras[1].distancia;
+        document.getElementById('tiempo-segura2').textContent = rutas.seguras[1].duracion;
+        document.getElementById('riesgo-segura2').textContent = `Riesgo: ${rutas.seguras[1].puntuacion_riesgo}`;
+
+        // Mostrar ruta rápida por defecto
+        seleccionarRuta('rapida');
+    }
+
+    // Seleccionar una ruta
+    function seleccionarRuta(tipo) {
+        if (!rutasCalculadas) return;
+
+        // Remover highlights anteriores
+        document.querySelectorAll('#rutas-container .card-interactive').forEach(card => {
+            card.classList.remove('border-red-500', 'border-green-500', 'shadow-md');
+            card.classList.add('border-transparent');
+        });
+
+        // Limpiar ruta anterior
+        if (rutaActualLayer) {
+            map.removeLayer(rutaActualLayer);
+        }
+
+        let rutaSeleccionada;
+        let color;
+
+        if (tipo === 'rapida') {
+            rutaSeleccionada = rutasCalculadas.rapida;
+            color = '#dc2626';
+            document.getElementById('ruta-rapida').classList.remove('border-transparent');
+            document.getElementById('ruta-rapida').classList.add('border-red-500', 'shadow-md');
+        } else if (tipo === 'segura1') {
+            rutaSeleccionada = rutasCalculadas.seguras[0];
+            color = '#16a34a';
+            document.getElementById('ruta-segura-1').classList.remove('border-transparent');
+            document.getElementById('ruta-segura-1').classList.add('border-green-500', 'shadow-md');
+        } else if (tipo === 'segura2') {
+            rutaSeleccionada = rutasCalculadas.seguras[1];
+            color = '#15803d';
+            document.getElementById('ruta-segura-2').classList.remove('border-transparent');
+            document.getElementById('ruta-segura-2').classList.add('border-green-500', 'shadow-md');
+        }
+
+        // Dibujar ruta en el mapa
+        rutaActualLayer = L.polyline(rutaSeleccionada.coordenadas, {
+            color: color,
+            weight: 6,
+            opacity: 0.8,
+            lineJoin: 'round',
+            lineCap: 'round'
+        }).addTo(map);
+
+        // Ajustar vista del mapa
+        map.fitBounds(rutaActualLayer.getBounds(), { padding: [50, 50] });
+    }
+
+    // Iniciar navegación
+    function iniciarNavegacion() {
+        alert('Navegación iniciada. En producción, esto activaría el GPS y seguimiento en tiempo real.');
+        // Aquí se implementaría el seguimiento en tiempo real
+    }
+
+    // Inicializar al cargar
+    document.addEventListener('DOMContentLoaded', function() {
+        initMap();
+    });
+</script>
+{% endblock %}

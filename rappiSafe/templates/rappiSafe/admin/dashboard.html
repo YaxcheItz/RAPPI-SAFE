@@ -1,0 +1,92 @@
+{% extends 'rappiSafe/base.html' %}
+
+{% block title %}Panel de Administración - Rappi Safe{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <h1 class="text-3xl font-bold text-gray-800 mb-8">Panel de Administración</h1>
+
+    <!-- Estadísticas generales -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="card">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-600 text-sm">Total Usuarios</p>
+                    <p class="text-3xl font-bold text-gray-800">{{ total_usuarios }}</p>
+                </div>
+                <i class="fas fa-users text-4xl text-blue-500"></i>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-600 text-sm">Repartidores</p>
+                    <p class="text-3xl font-bold text-gray-800">{{ total_repartidores }}</p>
+                </div>
+                <i class="fas fa-motorcycle text-4xl text-green-500"></i>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-600 text-sm">Operadores</p>
+                    <p class="text-3xl font-bold text-gray-800">{{ total_operadores }}</p>
+                </div>
+                <i class="fas fa-headset text-4xl text-purple-500"></i>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-600 text-sm">Alertas este mes</p>
+                    <p class="text-3xl font-bold text-gray-800">{{ alertas_mes }}</p>
+                </div>
+                <i class="fas fa-exclamation-triangle text-4xl text-red-500"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Accesos rápidos -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <a href="{% url 'gestionar_usuarios' %}" class="card hover:shadow-lg transition-shadow">
+            <div class="text-center py-6">
+                <i class="fas fa-user-cog text-5xl text-blue-600 mb-4"></i>
+                <h3 class="text-xl font-bold text-gray-800">Gestionar Usuarios</h3>
+                <p class="text-gray-600 text-sm mt-2">Crear, editar y administrar usuarios</p>
+            </div>
+        </a>
+
+        <a href="{% url 'estadisticas' %}" class="card hover:shadow-lg transition-shadow">
+            <div class="text-center py-6">
+                <i class="fas fa-chart-bar text-5xl text-green-600 mb-4"></i>
+                <h3 class="text-xl font-bold text-gray-800">Estadísticas</h3>
+                <p class="text-gray-600 text-sm mt-2">Ver reportes y análisis del sistema</p>
+            </div>
+        </a>
+
+        <a href="/admin/" class="card hover:shadow-lg transition-shadow">
+            <div class="text-center py-6">
+                <i class="fas fa-cogs text-5xl text-purple-600 mb-4"></i>
+                <h3 class="text-xl font-bold text-gray-800">Django Admin</h3>
+                <p class="text-gray-600 text-sm mt-2">Acceder al panel de administración de Django</p>
+            </div>
+        </a>
+    </div>
+
+    <!-- Alertas por tipo -->
+    <div class="card">
+        <h2 class="text-2xl font-bold text-gray-800 mb-4">Alertas por Tipo</h2>
+        <div class="grid grid-cols-2 gap-4">
+            {% for item in alertas_por_tipo %}
+            <div class="p-4 bg-gray-50 rounded-lg">
+                <p class="text-gray-600">{{ item.tipo|capfirst }}</p>
+                <p class="text-2xl font-bold text-gray-800">{{ item.total }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

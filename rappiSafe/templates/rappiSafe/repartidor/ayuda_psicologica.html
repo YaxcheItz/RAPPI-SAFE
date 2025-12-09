@@ -1,0 +1,75 @@
+{% extends 'rappiSafe/base.html' %}
+
+{% block title %}Ayuda Psicológica - Rappi Safe{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-3xl font-bold text-gray-800">Solicitar Ayuda Psicológica</h1>
+        <a href="{% url 'repartidor_home' %}" class="text-rappi-red hover:text-rappi-red-700">
+            <i class="fas fa-arrow-left mr-2"></i>Volver
+        </a>
+    </div>
+
+    <div class="bg-green-50 p-6 rounded-lg mb-6">
+        <div class="flex items-start">
+            <i class="fas fa-heart text-green-600 text-3xl mr-4 mt-1"></i>
+            <div>
+                <h2 class="font-bold text-green-900 text-lg mb-2">Tu bienestar es importante</h2>
+                <p class="text-green-800 text-sm">
+                    Estamos aquí para apoyarte. Si necesitas hablar con alguien o requieres apoyo profesional, completa este formulario y nos pondremos en contacto contigo lo antes posible.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <form method="POST" class="card">
+        {% csrf_token %}
+
+        <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+                ¿Qué tipo de ayuda necesitas?
+            </label>
+            <textarea
+                name="descripcion"
+                required
+                rows="6"
+                class="input"
+                placeholder="Describe brevemente tu situación o lo que necesitas..."
+            ></textarea>
+        </div>
+
+        <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+                Nivel de urgencia (1-10)
+            </label>
+            <input
+                type="range"
+                name="urgencia"
+                min="1"
+                max="10"
+                value="5"
+                class="w-full"
+                oninput="document.getElementById('urgencia-value').textContent = this.value"
+            >
+            <div class="flex justify-between text-sm text-gray-600 mt-2">
+                <span>Baja</span>
+                <span>Nivel: <strong id="urgencia-value">5</strong></span>
+                <span>Alta</span>
+            </div>
+        </div>
+
+        <div class="bg-yellow-50 p-4 rounded-lg mb-6">
+            <p class="text-sm text-yellow-800">
+                <i class="fas fa-lock mr-2"></i>
+                Toda la información es confidencial y será tratada con el máximo respeto y profesionalismo.
+            </p>
+        </div>
+
+        <button type="submit" class="w-full btn-primary py-3">
+            <i class="fas fa-paper-plane mr-2"></i>
+            Enviar Solicitud
+        </button>
+    </form>
+</div>
+{% endblock %}
