@@ -612,6 +612,22 @@ def ver_alerta(request, alerta_id):
 
 @login_required
 @user_passes_test(es_operador)
+def contactar_emergencias(request, alerta_id):
+    """Vista para contactar servicios de emergencia"""
+    alerta = get_object_or_404(Alerta, id=alerta_id)
+
+    # Total de solicitudes pendientes para el badge de navegación
+    total_solicitudes_pendientes = SolicitudAyudaPsicologica.objects.filter(estado='pendiente').count()
+
+    context = {
+        'alerta': alerta,
+        'total_solicitudes_pendientes': total_solicitudes_pendientes,
+    }
+    return render(request, 'rappiSafe/operador/emergencias.html', context)
+
+
+@login_required
+@user_passes_test(es_operador)
 @require_POST
 def atender_alerta(request, alerta_id):
     """Marcar alerta como en atención"""
@@ -852,11 +868,14 @@ def reportes_operador(request):
     # Alertas atendidas por el operador actual
     mis_alertas = alertas.filter(atendido_por=request.user).count()
 
-    # Top 5 repartidores con más alertas
-    top_repartidores = alertas.values(
-        'repartidor__first_name',
-        'repartidor__last_name',
-        'repartidor__id'
+    # Top 5 operadores con más alertas resueltas
+    top_operadores = alertas.filter(
+        estado='cerrada',
+        atendido_por__isnull=False
+    ).values(
+        'atendido_por__first_name',
+        'atendido_por__last_name',
+        'atendido_por__id'
     ).annotate(
         total=Count('id')
     ).order_by('-total')[:5]
@@ -882,12 +901,201 @@ def reportes_operador(request):
         'alertas_por_dia': list(alertas_por_dia),
         'tiempo_promedio_minutos': tiempo_promedio_minutos,
         'mis_alertas': mis_alertas,
-        'top_repartidores': top_repartidores,
+        'top_operadores': top_operadores,
         'total_solicitudes_psico': total_solicitudes_psico,
         'solicitudes_psico_atendidas': solicitudes_psico_atendidas,
         'total_solicitudes_pendientes': total_solicitudes_pendientes,
     }
     return render(request, 'rappiSafe/operador/reportes.html', context)
+
+
+@login_required
+@user_passes_test(es_operador)
+@require_POST
+def notificar_contactos_operador(request, alerta_id):
+    """Endpoint para notificar contactos de confianza desde el operador"""
+    from rappiSafe.utils import notificar_contactos_emergencia
+
+    try:
+        alerta = Alerta.objects.select_related('repartidor').get(id=alerta_id)
+
+        # Verificar que la alerta pertenezca a un repartidor
+        if not hasattr(alerta.repartidor, 'perfil_repartidor'):
+            return JsonResponse({
+                'success': False,
+                'error': 'El usuario no tiene perfil de repartidor'
+            })
+
+        # Llamar a la función de notificaciones
+        resultado = notificar_contactos_emergencia(alerta)
+
+        # Actualizar el incidente si existe
+        try:
+            incidente = Incidente.objects.get(alerta=alerta)
+            incidente.contactos_notificados = True
+            incidente.save()
+        except Incidente.DoesNotExist:
+            pass
+
+        return JsonResponse({
+            'success': resultado['success'],
+            'contactos_notificados': resultado.get('contactos_notificados', 0),
+            'notificaciones_fallidas': resultado.get('notificaciones_fallidas', 0),
+            'detalles': resultado.get('detalles', [])
+        })
+    except Alerta.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'error': 'Alerta no encontrada'
+        }, status=404)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@login_required
+@user_passes_test(es_operador)
+def generar_reporte_pdf(request):
+    """Generar reporte PDF de alertas"""
+    from django.http import HttpResponse
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import letter, A4
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import inch
+    from reportlab.lib.enums import TA_CENTER, TA_LEFT
+    from datetime import datetime, timedelta
+    from django.db.models import Count, Avg
+    from django.db.models.functions import TruncDate
+    import io
+
+    # Obtener rango de fechas
+    fecha_fin = timezone.now()
+    fecha_inicio = fecha_fin - timedelta(days=30)
+
+    if request.GET.get('fecha_inicio'):
+        fecha_inicio = datetime.strptime(request.GET.get('fecha_inicio'), '%Y-%m-%d')
+        fecha_inicio = timezone.make_aware(fecha_inicio)
+    if request.GET.get('fecha_fin'):
+        fecha_fin = datetime.strptime(request.GET.get('fecha_fin'), '%Y-%m-%d')
+        fecha_fin = timezone.make_aware(fecha_fin)
+
+    # Obtener datos
+    alertas = Alerta.objects.filter(creado_en__range=[fecha_inicio, fecha_fin])
+    total_alertas = alertas.count()
+    alertas_panico = alertas.filter(tipo='panico').count()
+    alertas_accidente = alertas.filter(tipo='accidente').count()
+    alertas_cerradas = alertas.filter(estado='cerrada').count()
+    alertas_pendientes = alertas.filter(estado='pendiente').count()
+
+    # Crear el PDF en memoria
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter)
+    elements = []
+
+    # Estilos
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=24,
+        textColor=colors.HexColor('#dc2626'),
+        spaceAfter=30,
+        alignment=TA_CENTER
+    )
+
+    heading_style = ParagraphStyle(
+        'CustomHeading',
+        parent=styles['Heading2'],
+        fontSize=14,
+        textColor=colors.HexColor('#dc2626'),
+        spaceAfter=12,
+        spaceBefore=12
+    )
+
+    # Título
+    elements.append(Paragraph("Reporte de Alertas - RappiSafe", title_style))
+    elements.append(Spacer(1, 0.2*inch))
+
+    # Período
+    periodo_text = f"Período: {fecha_inicio.strftime('%d/%m/%Y')} - {fecha_fin.strftime('%d/%m/%Y')}"
+    elements.append(Paragraph(periodo_text, styles['Normal']))
+    elements.append(Spacer(1, 0.3*inch))
+
+    # Estadísticas generales
+    elements.append(Paragraph("Estadísticas Generales", heading_style))
+    data_stats = [
+        ['Métrica', 'Valor'],
+        ['Total de Alertas', str(total_alertas)],
+        ['Alertas de Pánico', str(alertas_panico)],
+        ['Alertas de Accidente', str(alertas_accidente)],
+        ['Alertas Cerradas', str(alertas_cerradas)],
+        ['Alertas Pendientes', str(alertas_pendientes)],
+    ]
+
+    table_stats = Table(data_stats, colWidths=[3*inch, 2*inch])
+    table_stats.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#dc2626')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 12),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+    ]))
+    elements.append(table_stats)
+    elements.append(Spacer(1, 0.3*inch))
+
+    # Top Repartidores
+    elements.append(Paragraph("Top 5 Repartidores con Más Alertas", heading_style))
+    top_repartidores = alertas.values(
+        'repartidor__first_name',
+        'repartidor__last_name'
+    ).annotate(
+        total=Count('id')
+    ).order_by('-total')[:5]
+
+    data_top = [['Posición', 'Repartidor', 'Total Alertas']]
+    for idx, rep in enumerate(top_repartidores, 1):
+        nombre = f"{rep['repartidor__first_name']} {rep['repartidor__last_name']}"
+        data_top.append([str(idx), nombre, str(rep['total'])])
+
+    if len(data_top) > 1:
+        table_top = Table(data_top, colWidths=[1*inch, 3*inch, 1.5*inch])
+        table_top.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#dc2626')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 12),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ]))
+        elements.append(table_top)
+    else:
+        elements.append(Paragraph("No hay datos disponibles", styles['Normal']))
+
+    elements.append(Spacer(1, 0.3*inch))
+
+    # Pie de página
+    elements.append(Spacer(1, 0.5*inch))
+    footer_text = f"Generado el {timezone.now().strftime('%d/%m/%Y %H:%M:%S')} por {request.user.get_full_name()}"
+    elements.append(Paragraph(footer_text, styles['Normal']))
+
+    # Construir PDF
+    doc.build(elements)
+
+    # Preparar respuesta
+    buffer.seek(0)
+    response = HttpResponse(buffer, content_type='application/pdf')
+    filename = f"reporte_alertas_{fecha_inicio.strftime('%Y%m%d')}_{fecha_fin.strftime('%Y%m%d')}.pdf"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+    return response
 
 
 @login_required
@@ -947,6 +1155,44 @@ def lista_repartidores(request):
         'total_solicitudes_pendientes': total_solicitudes_pendientes,
     }
     return render(request, 'rappiSafe/operador/repartidores.html', context)
+
+
+@login_required
+@user_passes_test(es_operador)
+def operador_perfil_view(request):
+    """Vista de perfil del operador"""
+    # Total de solicitudes pendientes para el badge de navegación
+    total_solicitudes_pendientes = SolicitudAyudaPsicologica.objects.filter(estado='pendiente').count()
+
+    if request.method == 'POST':
+        # Actualizar información del usuario
+        request.user.first_name = request.POST.get('first_name', '')
+        request.user.last_name = request.POST.get('last_name', '')
+        request.user.telefono = request.POST.get('telefono', '')
+        request.user.save()
+
+        messages.success(request, 'Perfil actualizado correctamente')
+        return redirect('operador_perfil')
+
+    # Estadísticas del operador
+    alertas_atendidas = Alerta.objects.filter(atendido_por=request.user).count()
+    alertas_cerradas = Alerta.objects.filter(
+        atendido_por=request.user,
+        estado='cerrada'
+    ).count()
+
+    # Últimas alertas atendidas
+    ultimas_alertas = Alerta.objects.filter(
+        atendido_por=request.user
+    ).select_related('repartidor').order_by('-actualizado_en')[:5]
+
+    context = {
+        'alertas_atendidas': alertas_atendidas,
+        'alertas_cerradas': alertas_cerradas,
+        'ultimas_alertas': ultimas_alertas,
+        'total_solicitudes_pendientes': total_solicitudes_pendientes,
+    }
+    return render(request, 'rappiSafe/operador/perfil.html', context)
 
 
 # ==================== VISTAS ADMINISTRADOR ====================
@@ -1088,3 +1334,125 @@ def historial_view(request):
     }
 
     return render(request, 'rappiSafe/repartidor/historial.html', context)
+
+
+def register_view(request):
+    """Vista de registro de nuevos usuarios repartidores"""
+    import logging
+    logger = logging.getLogger(__name__)
+
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+
+    if request.method == 'POST':
+        # Obtener datos del formulario y hacer trim
+        username = request.POST.get('username', '').strip()
+        email = request.POST.get('email', '').strip()
+        password = request.POST.get('password', '')
+        password2 = request.POST.get('password2', '')
+        first_name = request.POST.get('first_name', '').strip()
+        last_name = request.POST.get('last_name', '').strip()
+        telefono = request.POST.get('telefono', '').strip()
+        numero_identificacion = request.POST.get('numero_identificacion', '').strip()
+
+        logger.info(f'Intento de registro - Username: {username}, Email: {email}')
+
+        # Validaciones
+        errors = []
+
+        # Validar que todos los campos estén presentes
+        if not all([username, email, password, password2, first_name, last_name, telefono, numero_identificacion]):
+            errors.append('Todos los campos son obligatorios')
+            logger.warning('Registro fallido: campos vacíos')
+
+        # Solo validar unicidad si los campos tienen valores
+        if username:
+            if User.objects.filter(username__iexact=username).exists():
+                errors.append('El nombre de usuario ya está en uso')
+                logger.warning(f'Registro fallido: username {username} ya existe')
+
+        if email:
+            if User.objects.filter(email__iexact=email).exists():
+                errors.append('El correo electrónico ya está registrado')
+                logger.warning(f'Registro fallido: email {email} ya existe')
+
+        if numero_identificacion:
+            if RepartidorProfile.objects.filter(numero_identificacion__iexact=numero_identificacion).exists():
+                errors.append('El número de identificación ya está registrado')
+                logger.warning(f'Registro fallido: identificación {numero_identificacion} ya existe')
+
+        # Validaciones de contraseña solo si hay contraseñas
+        if password or password2:
+            if password != password2:
+                errors.append('Las contraseñas no coinciden')
+
+            if len(password) < 8:
+                errors.append('La contraseña debe tener al menos 8 caracteres')
+
+            if not any(char.isdigit() for char in password):
+                errors.append('La contraseña debe contener al menos un número')
+
+            if not any(char.isalpha() for char in password):
+                errors.append('La contraseña debe contener al menos una letra')
+
+        # Si hay errores, mostrarlos
+        if errors:
+            for error in errors:
+                messages.error(request, error)
+            logger.warning(f'Registro fallido con errores: {errors}')
+            return render(request, 'registration/register.html')
+
+        try:
+            # Crear el usuario
+            logger.info(f'Creando usuario {username}...')
+            user = User.objects.create_user(
+                username=username,
+                email=email,
+                password=password,
+                first_name=first_name,
+                last_name=last_name,
+                telefono=telefono,
+                rol='repartidor',
+                activo=True
+            )
+            logger.info(f'Usuario {username} creado exitosamente con ID {user.id}')
+
+            # Crear el perfil de repartidor
+            logger.info(f'Creando perfil de repartidor para usuario {username}...')
+            RepartidorProfile.objects.create(
+                user=user,
+                numero_identificacion=numero_identificacion
+            )
+            logger.info(f'Perfil de repartidor creado exitosamente para {username}')
+
+            messages.success(request, 'Cuenta creada exitosamente. Por favor inicia sesión.')
+            return redirect('login')
+
+        except Exception as e:
+            logger.error(f'Error al crear cuenta para {username}: {str(e)}', exc_info=True)
+
+            # Verificar si es un error de constraint único
+            error_msg = str(e).lower()
+            if 'unique' in error_msg or 'unique constraint' in error_msg:
+                if 'email' in error_msg:
+                    messages.error(request, 'El correo electrónico ya está registrado.')
+                elif 'username' in error_msg:
+                    messages.error(request, 'El nombre de usuario ya está en uso.')
+                elif 'numero_identificacion' in error_msg:
+                    messages.error(request, 'El número de identificación ya está registrado.')
+                else:
+                    messages.error(request, 'Ya existe un registro con estos datos. Por favor verifica tu información.')
+            else:
+                messages.error(request, f'Error al crear la cuenta: {str(e)}')
+
+            # Si el usuario se creó pero falló el perfil, eliminarlo
+            try:
+                if 'user' in locals() and user.pk:
+                    logger.warning(f'Eliminando usuario {username} debido a error en creación de perfil')
+                    user.delete()
+            except Exception as delete_error:
+                logger.error(f'Error al eliminar usuario fallido: {str(delete_error)}')
+
+            return render(request, 'registration/register.html')
+
+    return render(request, 'registration/register.html')

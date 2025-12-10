@@ -5,6 +5,7 @@ urlpatterns = [
     # Autenticación
     path('', views.login_view, name='login'),
     path('login/', views.login_view, name='login'),
+    path('register/', views.register_view, name='register'),
     path('logout/', views.logout_view, name='logout'),
     path('dashboard/', views.dashboard, name='dashboard'),
 
@@ -28,7 +29,9 @@ urlpatterns = [
 
     # Operador
     path('operador/', views.operador_dashboard, name='operador_dashboard'),
+    path('operador/perfil/', views.operador_perfil_view, name='operador_perfil'),
     path('operador/alerta/<uuid:alerta_id>/', views.ver_alerta, name='ver_alerta'),
+    path('operador/alerta/<uuid:alerta_id>/emergencias/', views.contactar_emergencias, name='contactar_emergencias'),
     path('operador/alerta/<uuid:alerta_id>/atender/', views.atender_alerta, name='atender_alerta'),
     path('operador/alerta/<uuid:alerta_id>/cerrar/', views.cerrar_alerta, name='cerrar_alerta'),
     path('operador/incidente/<int:incidente_id>/bitacora/', views.agregar_bitacora, name='agregar_bitacora'),
@@ -36,6 +39,8 @@ urlpatterns = [
     path('operador/solicitudes-psicologicas/', views.gestionar_solicitudes_psicologicas, name='gestionar_solicitudes_psicologicas'),
     path('operador/solicitud-psicologica/<int:solicitud_id>/atender/', views.atender_solicitud_psicologica, name='atender_solicitud_psicologica'),
     path('operador/reportes/', views.reportes_operador, name='reportes_operador'),
+    path('operador/reportes/pdf/', views.generar_reporte_pdf, name='generar_reporte_pdf'),
+    path('operador/alerta/<uuid:alerta_id>/notificar-contactos/', views.notificar_contactos_operador, name='notificar_contactos_operador'),
     path('operador/repartidores/', views.lista_repartidores, name='lista_repartidores'),
 
     # Administrador

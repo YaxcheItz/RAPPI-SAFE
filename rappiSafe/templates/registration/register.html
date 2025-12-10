@@ -1,0 +1,497 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#dc2626">
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+    <title>Registro - Rappi Safe</title>
+    <link rel="stylesheet" href="{% static 'css/output.css' %}">
+    <style>
+        body {
+            background: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
+        }
+
+        .input-minimal {
+            border: 1px solid #e5e7eb;
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 14px 16px;
+            font-size: 15px;
+            transition: all 0.2s ease;
+            width: 100%;
+            color: #1f2937;
+        }
+
+        .input-minimal:focus {
+            outline: none;
+            border-color: #dc2626;
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+        }
+
+        .input-minimal::placeholder {
+            color: #9ca3af;
+        }
+
+        .input-error {
+            border-color: #dc2626 !important;
+        }
+
+        .error-message {
+            color: #dc2626;
+            font-size: 13px;
+            margin-top: 6px;
+            display: none;
+            font-weight: 500;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .btn-primary {
+            background: #dc2626;
+            color: #ffffff;
+            border: none;
+            border-radius: 12px;
+            padding: 14px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            width: 100%;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary:hover {
+            background: #b91c1c;
+        }
+
+        .btn-primary:active {
+            background: #991b1b;
+            transform: scale(0.98);
+        }
+
+        .logo-container {
+            width: 72px;
+            height: 72px;
+            margin: 0 auto 24px;
+            background: #ffffff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .form-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 48px 24px;
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: 300;
+            color: #1f2937;
+            margin: 0 0 8px 0;
+            letter-spacing: -0.5px;
+        }
+
+        .subtitle {
+            font-size: 15px;
+            color: #6b7280;
+            margin: 0 0 40px 0;
+            font-weight: 400;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .footer-text {
+            text-align: center;
+            color: #9ca3af;
+            font-size: 13px;
+            margin-top: 48px;
+        }
+
+        .message-box {
+            padding: 14px 16px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            font-size: 14px;
+        }
+
+        .message-error {
+            background: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+
+        .message-info {
+            background: #eff6ff;
+            color: #1e40af;
+            border: 1px solid #bfdbfe;
+        }
+
+        .link-text {
+            color: #6b7280;
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.2s;
+        }
+
+        .link-text:hover {
+            color: #1f2937;
+        }
+
+        .link-text strong {
+            font-weight: 600;
+            color: #dc2626;
+        }
+
+        .password-strength {
+            height: 4px;
+            background-color: #e5e7eb;
+            border-radius: 2px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+
+        .password-strength-bar {
+            height: 100%;
+            transition: all 0.3s;
+            width: 0%;
+        }
+
+        .password-strength-bar.weak {
+            background-color: #dc2626;
+            width: 33%;
+        }
+
+        .password-strength-bar.medium {
+            background-color: #f59e0b;
+            width: 66%;
+        }
+
+        .password-strength-bar.strong {
+            background-color: #10b981;
+            width: 100%;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        @media (max-width: 640px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body class="h-full">
+    <div class="min-h-screen flex items-center justify-center px-4">
+        <div class="form-container">
+            <!-- Logo y título -->
+            <div class="text-center">
+                <div class="logo-container">
+                    <i class="fas fa-shield-alt text-4xl" style="color: #dc2626;"></i>
+                </div>
+                <h1>Crear Cuenta</h1>
+                <p class="subtitle">Únete al Sistema de Seguridad para Repartidores</p>
+            </div>
+
+            <!-- Mensajes -->
+            {% if messages %}
+                {% for message in messages %}
+                <div class="message-box {% if message.tags == 'error' %}message-error{% else %}message-info{% endif %}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            {% endif %}
+
+            <!-- Formulario -->
+            <form method="POST" action="{% url 'register' %}" id="registerForm" novalidate>
+                {% csrf_token %}
+
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label for="first_name">Nombre <span style="color: #dc2626;">*</span></label>
+                        <input
+                            type="text"
+                            id="first_name"
+                            name="first_name"
+                            required
+                            class="input-minimal"
+                            placeholder="Tu nombre"
+                        >
+                        <div class="error-message" id="error-first_name">El nombre es obligatorio</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="last_name">Apellido <span style="color: #dc2626;">*</span></label>
+                        <input
+                            type="text"
+                            id="last_name"
+                            name="last_name"
+                            required
+                            class="input-minimal"
+                            placeholder="Tu apellido"
+                        >
+                        <div class="error-message" id="error-last_name">El apellido es obligatorio</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="username">Usuario <span style="color: #dc2626;">*</span></label>
+                    <input
+                        type="text"
+                        id="username"
+                        name="username"
+                        required
+                        class="input-minimal"
+                        placeholder="Nombre de usuario"
+                    >
+                    <div class="error-message" id="error-username">El usuario es obligatorio</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Correo Electrónico <span style="color: #dc2626;">*</span></label>
+                    <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        required
+                        class="input-minimal"
+                        placeholder="correo@ejemplo.com"
+                    >
+                    <div class="error-message" id="error-email">El correo electrónico es obligatorio y debe ser válido</div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label for="telefono">Teléfono <span style="color: #dc2626;">*</span></label>
+                        <input
+                            type="tel"
+                            id="telefono"
+                            name="telefono"
+                            required
+                            class="input-minimal"
+                            placeholder="+52 1234567890"
+                        >
+                        <div class="error-message" id="error-telefono">El teléfono es obligatorio</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="numero_identificacion">Número de Identificación <span style="color: #dc2626;">*</span></label>
+                        <input
+                            type="text"
+                            id="numero_identificacion"
+                            name="numero_identificacion"
+                            required
+                            class="input-minimal"
+                            placeholder="INE, RFC, etc."
+                        >
+                        <div class="error-message" id="error-numero_identificacion">El número de identificación es obligatorio</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Contraseña <span style="color: #dc2626;">*</span></label>
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        required
+                        class="input-minimal"
+                        placeholder="Mínimo 8 caracteres"
+                    >
+                    <div class="password-strength">
+                        <div class="password-strength-bar" id="strengthBar"></div>
+                    </div>
+                    <div class="error-message" id="error-password">La contraseña debe tener al menos 8 caracteres, incluir letras y números</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="password2">Confirmar Contraseña <span style="color: #dc2626;">*</span></label>
+                    <input
+                        type="password"
+                        id="password2"
+                        name="password2"
+                        required
+                        class="input-minimal"
+                        placeholder="Repite tu contraseña"
+                    >
+                    <div class="error-message" id="error-password2">Las contraseñas no coinciden</div>
+                </div>
+
+                <div style="margin-top: 32px;">
+                    <button type="submit" class="btn-primary">
+                        Crear cuenta
+                    </button>
+                </div>
+            </form>
+
+            <!-- Link adicional -->
+            <div style="text-align: center; margin-top: 24px;">
+                <a href="{% url 'login' %}" class="link-text">
+                    ¿Ya tienes cuenta? <strong>Inicia sesión</strong>
+                </a>
+            </div>
+
+            <!-- Footer -->
+            <p class="footer-text">&copy; 2025 Rappi Safe. Todos los derechos reservados.</p>
+        </div>
+    </div>
+
+    <script>
+        // Validaciones
+        const form = document.getElementById('registerForm');
+        const inputs = {
+            first_name: document.getElementById('first_name'),
+            last_name: document.getElementById('last_name'),
+            username: document.getElementById('username'),
+            email: document.getElementById('email'),
+            telefono: document.getElementById('telefono'),
+            numero_identificacion: document.getElementById('numero_identificacion'),
+            password: document.getElementById('password'),
+            password2: document.getElementById('password2')
+        };
+
+        function validateField(fieldName) {
+            const input = inputs[fieldName];
+            const errorDiv = document.getElementById(`error-${fieldName}`);
+            let isValid = true;
+            let errorMessage = '';
+
+            if (!input.value.trim()) {
+                isValid = false;
+                errorMessage = getEmptyMessage(fieldName);
+            } else {
+                switch(fieldName) {
+                    case 'email':
+                        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                        if (!emailRegex.test(input.value)) {
+                            isValid = false;
+                            errorMessage = 'El correo electrónico no es válido';
+                        }
+                        break;
+
+                    case 'password':
+                        const password = input.value;
+                        if (password.length < 8) {
+                            isValid = false;
+                            errorMessage = 'La contraseña debe tener al menos 8 caracteres';
+                        } else if (!/[a-zA-Z]/.test(password)) {
+                            isValid = false;
+                            errorMessage = 'La contraseña debe contener al menos una letra';
+                        } else if (!/\d/.test(password)) {
+                            isValid = false;
+                            errorMessage = 'La contraseña debe contener al menos un número';
+                        }
+                        updatePasswordStrength(password);
+                        break;
+
+                    case 'password2':
+                        if (input.value !== inputs.password.value) {
+                            isValid = false;
+                            errorMessage = 'Las contraseñas no coinciden';
+                        }
+                        break;
+                }
+            }
+
+            if (!isValid) {
+                input.classList.add('input-error');
+                errorDiv.textContent = errorMessage;
+                errorDiv.classList.add('show');
+            } else {
+                input.classList.remove('input-error');
+                errorDiv.classList.remove('show');
+            }
+
+            return isValid;
+        }
+
+        function getEmptyMessage(fieldName) {
+            const messages = {
+                first_name: 'El nombre es obligatorio',
+                last_name: 'El apellido es obligatorio',
+                username: 'El usuario es obligatorio',
+                email: 'El correo electrónico es obligatorio',
+                telefono: 'El teléfono es obligatorio',
+                numero_identificacion: 'El número de identificación es obligatorio',
+                password: 'La contraseña es obligatoria',
+                password2: 'Debes confirmar tu contraseña'
+            };
+            return messages[fieldName] || 'Este campo es obligatorio';
+        }
+
+        function updatePasswordStrength(password) {
+            const strengthBar = document.getElementById('strengthBar');
+            let strength = 0;
+
+            if (password.length >= 8) strength++;
+            if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
+            if (/\d/.test(password)) strength++;
+            if (/[^a-zA-Z\d]/.test(password)) strength++;
+
+            strengthBar.className = 'password-strength-bar';
+            if (strength === 0 || strength === 1) {
+                strengthBar.classList.add('weak');
+            } else if (strength === 2 || strength === 3) {
+                strengthBar.classList.add('medium');
+            } else {
+                strengthBar.classList.add('strong');
+            }
+        }
+
+        Object.keys(inputs).forEach(fieldName => {
+            inputs[fieldName].addEventListener('blur', () => {
+                validateField(fieldName);
+            });
+
+            if (fieldName === 'password' || fieldName === 'password2') {
+                inputs[fieldName].addEventListener('input', () => {
+                    if (inputs[fieldName].classList.contains('input-error')) {
+                        validateField(fieldName);
+                    }
+                });
+            }
+        });
+
+        form.addEventListener('submit', (e) => {
+            let isFormValid = true;
+
+            Object.keys(inputs).forEach(fieldName => {
+                if (!validateField(fieldName)) {
+                    isFormValid = false;
+                }
+            });
+
+            if (!isFormValid) {
+                e.preventDefault();
+                const firstError = document.querySelector('.input-error');
+                if (firstError) {
+                    firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        });
+    </script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+</body>
+</html>
