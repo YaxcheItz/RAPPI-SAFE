@@ -1,10 +1,10 @@
-{% extends 'rappiSafe/base.html' %}
+{% extends 'rappiSafe/repartidor/base_repartidor.html' %}
 {% load static %}
 
 {% block title %}Mi Perfil - Rappi Safe{% endblock %}
 
-{% block content %}
-<div class="max-w-3xl mx-auto pb-20">
+{% block repartidor_content %}
+<div class="max-w-3xl mx-auto p-6">
     <!-- Header -->
     <div class="mb-8">
         <h1 class="text-3xl font-bold text-gray-900 mb-1">Mi Perfil</h1>
@@ -393,7 +393,7 @@
     </div>
 
     <!-- Bottom Navigation Bar -->
-    <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
+    <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-[2000]">
         <div class="max-w-7xl mx-auto px-4">
             <div class="flex items-center justify-around h-16">
                 <a href="{% url 'repartidor_home' %}" class="flex flex-col items-center justify-center flex-1 text-gray-600 hover:text-rappi-red transition-colors">

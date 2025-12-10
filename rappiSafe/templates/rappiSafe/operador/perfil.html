@@ -1,0 +1,253 @@
+{% extends 'rappiSafe/operador/base_operador.html' %}
+{% load static %}
+
+{% block title %}Mi Perfil - Rappi Safe{% endblock %}
+
+{% block operador_content %}
+<div class="max-w-5xl mx-auto p-6">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-1 flex items-center gap-3">
+            <div class="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center">
+                <i class="fas fa-user-shield text-purple-600 text-xl"></i>
+            </div>
+            Mi Perfil
+        </h1>
+        <p class="text-gray-500">Administra tu información personal y estadísticas</p>
+    </div>
+
+    <!-- Mensajes -->
+    {% if messages %}
+        {% for message in messages %}
+        <div class="mb-4 rounded-lg p-4 {% if message.tags == 'error' %}bg-red-100 text-red-800{% else %}bg-green-100 text-green-800{% endif %}">
+            <i class="fas {% if message.tags == 'error' %}fa-exclamation-circle{% else %}fa-check-circle{% endif %} mr-2"></i>
+            {{ message }}
+        </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Panel izquierdo - Información personal -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Información Personal -->
+            <div class="card">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
+                        <i class="fas fa-user text-blue-600"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-semibold text-gray-900">Información Personal</h2>
+                        <p class="text-sm text-gray-500">Datos de tu cuenta</p>
+                    </div>
+                </div>
+
+                <form method="POST" class="space-y-5">
+                    {% csrf_token %}
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-900 mb-2">
+                                <i class="fas fa-user text-gray-500 mr-1"></i>
+                                Nombre
+                            </label>
+                            <input type="text" name="first_name" value="{{ user.first_name }}" required
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-rappi-red focus:border-transparent transition-all">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-900 mb-2">
+                                <i class="fas fa-user text-gray-500 mr-1"></i>
+                                Apellido
+                            </label>
+                            <input type="text" name="last_name" value="{{ user.last_name }}" required
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-rappi-red focus:border-transparent transition-all">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-900 mb-2">
+                                <i class="fas fa-envelope text-gray-500 mr-1"></i>
+                                Correo Electrónico
+                            </label>
+                            <input type="email" value="{{ user.email }}" disabled
+                                   class="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 text-gray-600">
+                            <p class="text-xs text-gray-500 mt-1.5">El correo no se puede cambiar</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-900 mb-2">
+                                <i class="fas fa-phone text-gray-500 mr-1"></i>
+                                Teléfono
+                            </label>
+                            <input type="tel" name="telefono" value="{{ user.telefono }}"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-rappi-red focus:border-transparent transition-all"
+                                   placeholder="+52 1234567890">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-900 mb-2">
+                            <i class="fas fa-id-badge text-gray-500 mr-1"></i>
+                            Usuario
+                        </label>
+                        <input type="text" value="{{ user.username }}" disabled
+                               class="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 text-gray-600">
+                        <p class="text-xs text-gray-500 mt-1.5">El usuario no se puede cambiar</p>
+                    </div>
+
+                    <div class="pt-4">
+                        <button type="submit" class="btn-primary w-full">
+                            <i class="fas fa-save mr-2"></i>
+                            Guardar Cambios
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Últimas alertas atendidas -->
+            <div class="card">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
+                        <i class="fas fa-history text-green-600"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-semibold text-gray-900">Últimas Alertas Atendidas</h2>
+                        <p class="text-sm text-gray-500">Tus 5 alertas más recientes</p>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    {% for alerta in ultimas_alertas %}
+                    <div class="p-4 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center gap-2">
+                                <span class="px-3 py-1 rounded-full text-xs font-medium
+                                    {% if alerta.tipo == 'panico' %}bg-red-100 text-red-800{% else %}bg-orange-100 text-orange-800{% endif %}">
+                                    <i class="fas {% if alerta.tipo == 'panico' %}fa-fire{% else %}fa-car-crash{% endif %} mr-1"></i>
+                                    {{ alerta.get_tipo_display }}
+                                </span>
+                                <span class="px-3 py-1 rounded-full text-xs font-medium
+                                    {% if alerta.estado == 'cerrada' %}bg-green-100 text-green-800
+                                    {% elif alerta.estado == 'en_atencion' %}bg-blue-100 text-blue-800
+                                    {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                    {{ alerta.get_estado_display }}
+                                </span>
+                            </div>
+                            <span class="text-xs text-gray-500">
+                                <i class="fas fa-clock mr-1"></i>
+                                {{ alerta.actualizado_en|date:"d/m/Y H:i" }}
+                            </span>
+                        </div>
+                        <div class="flex items-center gap-2 text-sm text-gray-700">
+                            <i class="fas fa-user text-gray-400"></i>
+                            <span class="font-medium">{{ alerta.repartidor.get_full_name }}</span>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-inbox text-4xl mb-2"></i>
+                        <p>No has atendido alertas aún</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel derecho - Estadísticas -->
+        <div class="space-y-6">
+            <!-- Rol y estado -->
+            <div class="card">
+                <div class="text-center">
+                    <div class="w-20 h-20 mx-auto mb-4 rounded-full bg-purple-100 flex items-center justify-center">
+                        <i class="fas fa-user-shield text-purple-600 text-3xl"></i>
+                    </div>
+                    <h3 class="font-semibold text-gray-900 text-lg">{{ user.get_full_name }}</h3>
+                    <p class="text-sm text-gray-500 mb-4">{{ user.get_rol_display }}</p>
+
+                    <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-100 text-green-800 text-sm font-medium">
+                        <div class="w-2 h-2 rounded-full bg-green-600 animate-pulse"></div>
+                        Activo
+                    </div>
+                </div>
+            </div>
+
+            <!-- Estadísticas -->
+            <div class="card">
+                <h3 class="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <i class="fas fa-chart-bar text-rappi-red"></i>
+                    Mis Estadísticas
+                </h3>
+
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between p-3 rounded-lg bg-blue-50">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                                <i class="fas fa-bell text-blue-600"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-600">Total Atendidas</p>
+                                <p class="text-2xl font-bold text-blue-900">{{ alertas_atendidas }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between p-3 rounded-lg bg-green-50">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
+                                <i class="fas fa-check-circle text-green-600"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-600">Resueltas</p>
+                                <p class="text-2xl font-bold text-green-900">{{ alertas_cerradas }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between p-3 rounded-lg bg-purple-50">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                                <i class="fas fa-percentage text-purple-600"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-600">Tasa de Resolución</p>
+                                <p class="text-2xl font-bold text-purple-900">
+                                    {% if alertas_atendidas > 0 %}
+                                        {% widthratio alertas_cerradas alertas_atendidas 100 %}%
+                                    {% else %}
+                                        0%
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Información del sistema -->
+            <div class="card">
+                <h3 class="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <i class="fas fa-info-circle text-rappi-red"></i>
+                    Información
+                </h3>
+                <div class="space-y-3 text-sm">
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-600">Cuenta creada</span>
+                        <span class="font-medium text-gray-900">{{ user.date_joined|date:"d/m/Y" }}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-600">Último acceso</span>
+                        <span class="font-medium text-gray-900">{{ user.last_login|date:"d/m/Y H:i" }}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-600">Estado cuenta</span>
+                        <span class="px-2 py-1 rounded-full bg-green-100 text-green-800 text-xs font-medium">
+                            {% if user.activo %}Activa{% else %}Inactiva{% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
