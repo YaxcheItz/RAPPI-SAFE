@@ -252,12 +252,10 @@
                         <i class="fas fa-location-dot"></i>
                         <span id="gps-status">Iniciando GPS...</span>
                     </div>
-                    {% if perfil.nivel_bateria %}
                     <div class="flex items-center gap-1">
-                        <i class="fas fa-battery-full"></i>
-                        <span>{{ perfil.nivel_bateria }}%</span>
+                        <i class="fas fa-battery-full" id="battery-icon"></i>
+                        <span data-battery-level>{% if perfil.nivel_bateria %}{{ perfil.nivel_bateria }}{% else %}--{% endif %}%</span>
                     </div>
-                    {% endif %}
                 </div>
             </div>
 
@@ -506,6 +504,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initSearchBox();
     initSOSButton();
     initRouteControls();
+    initBatteryMonitoring();
 });
 
 // ============================================================================
@@ -1153,15 +1152,18 @@ function activateSOS() {
     };
 
     // Función auxiliar para enviar la alerta
-    function enviarAlertaConUbicacion(latitud, longitud, metodo) {
+    async function enviarAlertaConUbicacion(latitud, longitud, metodo) {
         console.log(`📤 Enviando alerta (método: ${metodo})`);
 
         document.getElementById('sos-instruction').textContent = 'Enviando alerta...';
 
+        // Obtener nivel de batería en tiempo real
+        const batteryLevel = await getBatteryLevel();
+
         const alertData = {
             latitud: latitud || 0,
             longitud: longitud || 0,
-            bateria: {% if perfil.nivel_bateria %}{{ perfil.nivel_bateria }}{% else %}100{% endif %},
+            bateria: batteryLevel || {% if perfil.nivel_bateria %}{{ perfil.nivel_bateria }}{% else %}100{% endif %},
             datos_sensores: {
                 metodo_ubicacion: metodo,
                 tiene_gps: latitud !== null && longitud !== null
@@ -1252,15 +1254,52 @@ function activateSOS() {
 // ALERTAS
 // ============================================================================
 function cancelarAlerta(id) {
+    console.log('🚨 Intentando cancelar alerta:', id);
     currentAlertId = id;
-    document.getElementById('cancel-modal').classList.remove('hidden');
+
+    const modal = document.getElementById('cancel-modal');
+    if (!modal) {
+        console.error('❌ Modal no encontrado');
+        alert('Error: No se pudo abrir el modal de cancelación');
+        return;
+    }
+
+    console.log('✅ Mostrando modal de cancelación');
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
 }
 
 function closeAlertModal() {
-    document.getElementById('cancel-modal').classList.add('hidden');
+    console.log('❌ Cerrando modal de cancelación');
+    const modal = document.getElementById('cancel-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+    }
 }
 
 function confirmCancelAlert() {
+    console.log('✅ Confirmando cancelación de alerta:', currentAlertId);
+
+    if (!currentAlertId) {
+        console.error('❌ No hay alerta seleccionada');
+        closeAlertModal();
+        return;
+    }
+
+    // Mostrar indicador de carga
+    const modal = document.getElementById('cancel-modal');
+    if (modal) {
+        modal.innerHTML = `
+            <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+                <div class="text-center">
+                    <i class="fas fa-spinner fa-spin text-4xl text-gray-600 mb-4"></i>
+                    <p class="text-gray-700">Cancelando alerta...</p>
+                </div>
+            </div>
+        `;
+    }
+
     fetch(`/repartidor/alerta/${currentAlertId}/cancelar/`, {
         method: 'POST',
         headers: {
@@ -1268,13 +1307,22 @@ function confirmCancelAlert() {
             'X-CSRFToken': window.RappiSafe.csrfToken
         }
     })
-    .then(() => {
-        console.log('✅ Alerta cancelada');
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('✅ Alerta cancelada exitosamente');
+        alert('Alerta cancelada exitosamente');
         location.reload();
     })
     .catch(error => {
         console.error('❌ Error al cancelar alerta:', error);
+        alert('Error al cancelar la alerta: ' + error.message);
         closeAlertModal();
+        location.reload();
     });
 }
 
@@ -1757,16 +1805,115 @@ function showShakeNotification() {
 }
 
 async function getBatteryLevel() {
-    if (navigator.getBattery) {
-        try {
+    try {
+        // Intentar usar Battery API
+        if ('getBattery' in navigator) {
             const battery = await navigator.getBattery();
-            return Math.round(battery.level * 100);
-        } catch (error) {
-            console.warn('⚠️ No se pudo obtener nivel de batería:', error);
-            return null;
+            const level = Math.round(battery.level * 100);
+            console.log('🔋 Nivel de batería detectado:', level + '%');
+
+            // Actualizar UI si existe
+            updateBatteryUI(level);
+
+            // Enviar al servidor para actualizar el perfil
+            updateBatteryOnServer(level);
+
+            return level;
+        }
+
+        // Fallback: Battery Status API (deprecated pero aún funciona en algunos navegadores)
+        if ('battery' in navigator || 'mozBattery' in navigator || 'webkitBattery' in navigator) {
+            const battery = navigator.battery || navigator.mozBattery || navigator.webkitBattery;
+            const level = Math.round(battery.level * 100);
+            console.log('🔋 Nivel de batería detectado (API legacy):', level + '%');
+            updateBatteryUI(level);
+            updateBatteryOnServer(level);
+            return level;
+        }
+
+        console.warn('⚠️ Battery API no disponible en este navegador');
+        return null;
+    } catch (error) {
+        console.error('❌ Error al obtener nivel de batería:', error);
+        return null;
+    }
+}
+
+function updateBatteryUI(level) {
+    // Actualizar el indicador visual de batería
+    const batteryElements = document.querySelectorAll('[data-battery-level]');
+    batteryElements.forEach(el => {
+        el.textContent = level + '%';
+    });
+
+    // Actualizar el ícono de batería según el nivel
+    const batteryIcon = document.getElementById('battery-icon');
+    if (batteryIcon) {
+        if (level > 80) {
+            batteryIcon.className = 'fas fa-battery-full text-green-600';
+        } else if (level > 60) {
+            batteryIcon.className = 'fas fa-battery-three-quarters text-green-600';
+        } else if (level > 40) {
+            batteryIcon.className = 'fas fa-battery-half text-yellow-600';
+        } else if (level > 20) {
+            batteryIcon.className = 'fas fa-battery-quarter text-orange-600';
+        } else {
+            batteryIcon.className = 'fas fa-battery-empty text-red-600 animate-pulse';
         }
     }
-    return null;
+}
+
+function updateBatteryOnServer(level) {
+    // Enviar nivel de batería al servidor
+    fetch('{% url "actualizar_bateria" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': window.RappiSafe.csrfToken
+        },
+        body: JSON.stringify({ bateria: level })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            console.log('✅ Nivel de batería actualizado en servidor:', level + '%');
+        }
+    })
+    .catch(error => {
+        console.warn('⚠️ Error al actualizar batería en servidor:', error);
+    });
+}
+
+// Monitorear cambios en el nivel de batería
+async function initBatteryMonitoring() {
+    try {
+        if ('getBattery' in navigator) {
+            const battery = await navigator.getBattery();
+
+            // Actualizar inicialmente
+            const initialLevel = Math.round(battery.level * 100);
+            console.log('🔋 Nivel de batería inicial:', initialLevel + '%');
+            updateBatteryUI(initialLevel);
+            updateBatteryOnServer(initialLevel);
+
+            // Escuchar cambios en el nivel de batería
+            battery.addEventListener('levelchange', function() {
+                const newLevel = Math.round(battery.level * 100);
+                console.log('🔋 Batería cambió a:', newLevel + '%');
+                updateBatteryUI(newLevel);
+                updateBatteryOnServer(newLevel);
+            });
+
+            // Actualizar cada 5 minutos por si acaso
+            setInterval(() => {
+                const level = Math.round(battery.level * 100);
+                updateBatteryUI(level);
+                updateBatteryOnServer(level);
+            }, 300000); // 5 minutos
+        }
+    } catch (error) {
+        console.error('❌ Error al inicializar monitoreo de batería:', error);
+    }
 }
 
 // Función global para iniciar detección de agitación

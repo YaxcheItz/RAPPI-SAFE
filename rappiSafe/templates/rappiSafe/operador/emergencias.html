@@ -1,0 +1,233 @@
+{% extends 'rappiSafe/operador/base_operador.html' %}
+{% load static %}
+
+{% block title %}Contactar Emergencias - Rappi Safe{% endblock %}
+
+{% block operador_content %}
+<div class="container-main">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 mb-1">Información de Emergencias</h1>
+            <p class="text-sm text-gray-500">Alerta {{ alerta.id|truncatechars:12 }}</p>
+        </div>
+        <a href="{% url 'ver_alerta' alerta.id %}" class="link">
+            <i class="fas fa-arrow-left"></i>
+            Volver a Alerta
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Columna Principal -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Información del Repartidor -->
+            <div class="card">
+                <div class="flex items-start justify-between mb-6">
+                    <div class="flex items-start gap-4">
+                        <div class="status-icon-info">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-900">{{ alerta.repartidor.get_full_name }}</h2>
+                            <a href="tel:{{ alerta.repartidor.telefono }}" class="text-sm text-gray-600 hover:text-rappi-red flex items-center gap-1 mt-1">
+                                <i class="fas fa-phone"></i>
+                                {{ alerta.repartidor.telefono }}
+                            </a>
+                        </div>
+                    </div>
+                    <span class="badge badge-info">
+                        <i class="fas fa-id-card mr-1"></i>
+                        Repartidor
+                    </span>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="p-3 rounded-xl bg-gray-50 border border-gray-200">
+                        <p class="text-xs text-gray-600 font-semibold mb-1">ID</p>
+                        <p class="font-medium text-gray-900 text-sm">{{ alerta.repartidor.id }}</p>
+                    </div>
+                    <div class="p-3 rounded-xl bg-blue-50 border border-blue-100">
+                        <p class="text-xs text-blue-600 font-semibold mb-1">Estado</p>
+                        <p class="font-medium text-gray-900">{{ alerta.repartidor.perfil_repartidor.get_estado_display }}</p>
+                    </div>
+                    <div class="p-3 rounded-xl bg-red-50 border border-red-100">
+                        <p class="text-xs text-red-600 font-semibold mb-1">Ubicación</p>
+                        <a href="https://www.google.com/maps?q={{ alerta.latitud }},{{ alerta.longitud }}" target="_blank" class="font-medium text-rappi-red hover:text-red-700 flex items-center gap-1 text-sm">
+                            <i class="fas fa-map-marker-alt"></i>
+                            Ver en mapa
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Servicios de Emergencia -->
+            <div class="card">
+                <h3 class="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-rappi-red/10 flex items-center justify-center">
+                        <i class="fas fa-phone-alt text-rappi-red text-sm"></i>
+                    </div>
+                    Servicios de Emergencia
+                </h3>
+                <div class="space-y-3">
+                    <!-- 911 -->
+                    <a href="tel:911" class="flex items-center gap-3 p-4 rounded-lg hover:bg-gray-50 transition-colors group">
+                        <i class="fas fa-phone text-red-600 text-lg"></i>
+                        <span class="text-lg font-semibold text-gray-900 group-hover:text-rappi-red transition-colors">911 - Emergencias</span>
+                    </a>
+
+                    <!-- Cruz Roja -->
+                    <a href="tel:065" class="flex items-center gap-3 p-4 rounded-lg hover:bg-gray-50 transition-colors group">
+                        <i class="fas fa-phone text-red-600 text-lg"></i>
+                        <span class="text-lg font-semibold text-gray-900 group-hover:text-rappi-red transition-colors">065 - Cruz Roja</span>
+                    </a>
+
+                    <!-- Bomberos -->
+                    <a href="tel:068" class="flex items-center gap-3 p-4 rounded-lg hover:bg-gray-50 transition-colors group">
+                        <i class="fas fa-phone text-orange-600 text-lg"></i>
+                        <span class="text-lg font-semibold text-gray-900 group-hover:text-orange-600 transition-colors">068 - Bomberos</span>
+                    </a>
+
+                    <!-- Repartidor -->
+                    <a href="tel:{{ alerta.repartidor.telefono }}" class="flex items-center gap-3 p-4 rounded-lg hover:bg-gray-50 transition-colors group">
+                        <i class="fas fa-phone text-blue-600 text-lg"></i>
+                        <span class="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">{{ alerta.repartidor.telefono }} - Repartidor</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Detalles de Alerta -->
+            <div class="card">
+                <h3 class="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-yellow-100 flex items-center justify-center">
+                        <i class="fas fa-exclamation-triangle text-yellow-600 text-sm"></i>
+                    </div>
+                    Detalles de Alerta
+                </h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="p-3 rounded-xl {% if alerta.tipo == 'panico' %}bg-red-50 border border-red-100{% else %}bg-orange-50 border border-orange-100{% endif %}">
+                        <p class="text-xs {% if alerta.tipo == 'panico' %}text-red-600{% else %}text-orange-600{% endif %} font-semibold mb-1">Tipo</p>
+                        <span class="badge {% if alerta.tipo == 'panico' %}badge-danger{% else %}badge-warning{% endif %}">
+                            <i class="fas {% if alerta.tipo == 'panico' %}fa-hand-paper{% else %}fa-car-crash{% endif %} mr-1"></i>
+                            {{ alerta.get_tipo_display }}
+                        </span>
+                    </div>
+                    <div class="p-3 rounded-xl {% if alerta.estado == 'pendiente' %}bg-yellow-50 border border-yellow-100{% elif alerta.estado == 'en_atencion' %}bg-blue-50 border border-blue-100{% else %}bg-green-50 border border-green-100{% endif %}">
+                        <p class="text-xs {% if alerta.estado == 'pendiente' %}text-yellow-600{% elif alerta.estado == 'en_atencion' %}text-blue-600{% else %}text-green-600{% endif %} font-semibold mb-1">Estado</p>
+                        <span class="badge {% if alerta.estado == 'pendiente' %}badge-danger{% elif alerta.estado == 'en_atencion' %}badge-warning{% else %}badge-success{% endif %}">
+                            {{ alerta.get_estado_display }}
+                        </span>
+                    </div>
+                    <div class="p-3 rounded-xl bg-gray-50 border border-gray-200">
+                        <p class="text-xs text-gray-600 font-semibold mb-1">Hora</p>
+                        <p class="font-medium text-gray-900 text-sm">{{ alerta.creado_en|date:"H:i:s" }}</p>
+                    </div>
+                    {% if alerta.nivel_bateria %}
+                    <div class="p-3 rounded-xl bg-green-50 border border-green-100">
+                        <p class="text-xs text-green-600 font-semibold mb-1">Batería</p>
+                        <p class="font-medium text-gray-900 text-sm">{{ alerta.nivel_bateria }}%</p>
+                    </div>
+                    {% else %}
+                    <div class="p-3 rounded-xl bg-gray-50 border border-gray-200">
+                        <p class="text-xs text-gray-600 font-semibold mb-1">Batería</p>
+                        <p class="font-medium text-gray-900 text-sm">N/A</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="space-y-6">
+            <!-- Seguro Médico -->
+            <div class="card">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-lg {% if alerta.repartidor.perfil_repartidor.tiene_seguro %}bg-green-100{% else %}bg-gray-100{% endif %} flex items-center justify-center">
+                            <i class="fas fa-shield-alt {% if alerta.repartidor.perfil_repartidor.tiene_seguro %}text-green-600{% else %}text-gray-400{% endif %} text-sm"></i>
+                        </div>
+                        Seguro Médico
+                    </h3>
+                    {% if alerta.repartidor.perfil_repartidor.tiene_seguro %}
+                    <span class="badge badge-success">
+                        <i class="fas fa-check mr-1"></i>
+                        Activo
+                    </span>
+                    {% else %}
+                    <span class="badge badge-secondary">Sin seguro</span>
+                    {% endif %}
+                </div>
+
+                {% if alerta.repartidor.perfil_repartidor.tiene_seguro %}
+                <div class="space-y-3">
+                    <div class="p-3 rounded-xl bg-green-50 border border-green-100">
+                        <p class="text-xs text-green-600 font-semibold mb-1">Aseguradora</p>
+                        <p class="font-medium text-gray-900 text-sm">{{ alerta.repartidor.perfil_repartidor.nombre_aseguradora }}</p>
+                    </div>
+
+                    {% if alerta.repartidor.perfil_repartidor.numero_poliza %}
+                    <div class="p-3 rounded-xl bg-green-50 border border-green-100">
+                        <p class="text-xs text-green-600 font-semibold mb-1">Número de Póliza</p>
+                        <p class="font-medium text-gray-900 text-sm">{{ alerta.repartidor.perfil_repartidor.numero_poliza }}</p>
+                    </div>
+                    {% endif %}
+
+                    {% if alerta.repartidor.perfil_repartidor.telefono_aseguradora %}
+                    <div class="p-3 rounded-xl bg-green-50 border border-green-100">
+                        <p class="text-xs text-green-600 font-semibold mb-2">Teléfono de Contacto</p>
+                        <a href="tel:{{ alerta.repartidor.perfil_repartidor.telefono_aseguradora }}" class="btn-success w-full flex items-center justify-between">
+                            <span>{{ alerta.repartidor.perfil_repartidor.telefono_aseguradora }}</span>
+                            <i class="fas fa-phone"></i>
+                        </a>
+                    </div>
+                    {% endif %}
+
+                    {% if alerta.repartidor.perfil_repartidor.vigencia_seguro %}
+                    <div class="p-3 rounded-xl bg-green-50 border border-green-100">
+                        <p class="text-xs text-green-600 font-semibold mb-1">Vigencia</p>
+                        <p class="font-medium text-gray-900 text-sm">{{ alerta.repartidor.perfil_repartidor.vigencia_seguro|date:"d/m/Y" }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+                {% else %}
+                <div class="p-4 rounded-xl bg-gray-50 border border-gray-200">
+                    <p class="text-sm text-gray-600 text-center">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        No hay información de seguro médico registrada.
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Recomendación -->
+            <div class="card bg-gradient-to-br from-blue-500 to-indigo-600 border-none">
+                <div class="flex items-start gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-lightbulb text-white text-sm"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-white mb-2">Recomendación</h3>
+                        <p class="text-sm text-blue-100 leading-relaxed">
+                            {% if alerta.repartidor.perfil_repartidor.tiene_seguro %}
+                            Contacta primero a la aseguradora para coordinar atención. En emergencia crítica, llama al 911.
+                            {% else %}
+                            Contacta directamente al 911 o Cruz Roja. Proporciona la ubicación exacta del repartidor.
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Acciones Rápidas -->
+            <div class="space-y-3">
+                <a href="https://www.google.com/maps/dir/?api=1&destination={{ alerta.latitud }},{{ alerta.longitud }}" target="_blank" class="btn-primary w-full flex items-center justify-center gap-2">
+                    <i class="fas fa-directions"></i>
+                    Obtener Direcciones
+                </a>
+                <a href="{% url 'ver_alerta' alerta.id %}" class="btn-secondary w-full flex items-center justify-center gap-2">
+                    <i class="fas fa-arrow-left"></i>
+                    Volver a Alerta
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

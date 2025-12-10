@@ -18,21 +18,36 @@
 
     <!-- Filtros de fecha -->
     <div class="card mb-6">
-        <h3 class="font-semibold text-gray-900 mb-4">Período de análisis</h3>
+        <h3 class="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <i class="fas fa-calendar-alt text-rappi-red"></i>
+            Período de análisis
+        </h3>
         <form method="GET" class="flex gap-4 items-end">
             <div class="flex-1">
-                <label class="block text-sm font-medium text-gray-900 mb-2">Fecha inicio</label>
-                <input type="date" name="fecha_inicio"
-                       value="{{ fecha_inicio|date:'Y-m-d' }}"
-                       class="input">
+                <label class="block text-sm font-medium text-gray-900 mb-2">
+                    <i class="fas fa-calendar-day text-gray-500 mr-1"></i>
+                    Fecha inicio
+                </label>
+                <div class="relative">
+                    <input type="date" name="fecha_inicio"
+                           value="{{ fecha_inicio|date:'Y-m-d' }}"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-rappi-red focus:border-transparent transition-all text-gray-900 bg-white hover:border-rappi-red cursor-pointer"
+                           style="color-scheme: light;">
+                </div>
             </div>
             <div class="flex-1">
-                <label class="block text-sm font-medium text-gray-900 mb-2">Fecha fin</label>
-                <input type="date" name="fecha_fin"
-                       value="{{ fecha_fin|date:'Y-m-d' }}"
-                       class="input">
+                <label class="block text-sm font-medium text-gray-900 mb-2">
+                    <i class="fas fa-calendar-check text-gray-500 mr-1"></i>
+                    Fecha fin
+                </label>
+                <div class="relative">
+                    <input type="date" name="fecha_fin"
+                           value="{{ fecha_fin|date:'Y-m-d' }}"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-rappi-red focus:border-transparent transition-all text-gray-900 bg-white hover:border-rappi-red cursor-pointer"
+                           style="color-scheme: light;">
+                </div>
             </div>
-            <button type="submit" class="btn-primary">
+            <button type="submit" class="btn-primary px-6 py-3">
                 <i class="fas fa-filter mr-2"></i>Filtrar
             </button>
         </form>
@@ -142,33 +157,33 @@
         </div>
     </div>
 
-    <!-- Top repartidores con más alertas -->
+    <!-- Top operadores con más alertas resueltas -->
     <div class="card">
         <div class="flex items-center gap-3 mb-6">
             <div class="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center">
                 <i class="fas fa-trophy text-orange-600"></i>
             </div>
             <div>
-                <h3 class="font-semibold text-gray-900">Top 5 Repartidores</h3>
-                <p class="text-sm text-gray-600">Con más alertas en el período</p>
+                <h3 class="font-semibold text-gray-900">Top 5 Operadores</h3>
+                <p class="text-sm text-gray-600">Con más alertas resueltas en el período</p>
             </div>
         </div>
 
         <div class="space-y-3">
-            {% for rep in top_repartidores %}
+            {% for op in top_operadores %}
             <div class="flex items-center justify-between p-4 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center font-bold text-orange-600">
                         {{ forloop.counter }}
                     </div>
                     <div>
-                        <p class="font-semibold text-gray-900">{{ rep.repartidor__first_name }} {{ rep.repartidor__last_name }}</p>
-                        <p class="text-xs text-gray-500">ID: {{ rep.repartidor__id }}</p>
+                        <p class="font-semibold text-gray-900">{{ op.atendido_por__first_name }} {{ op.atendido_por__last_name }}</p>
+                        <p class="text-xs text-gray-500">ID: {{ op.atendido_por__id }}</p>
                     </div>
                 </div>
                 <div class="text-right">
-                    <span class="text-2xl font-bold text-orange-600">{{ rep.total }}</span>
-                    <p class="text-xs text-gray-600">alertas</p>
+                    <span class="text-2xl font-bold text-orange-600">{{ op.total }}</span>
+                    <p class="text-xs text-gray-600">alertas resueltas</p>
                 </div>
             </div>
             {% empty %}
@@ -180,83 +195,67 @@
         </div>
     </div>
 
-    <!-- Gráfica de alertas por día -->
+    <!-- Botón para generar reporte PDF -->
     <div class="card mt-6">
-        <div class="flex items-center gap-3 mb-6">
-            <div class="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center">
-                <i class="fas fa-chart-line text-indigo-600"></i>
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-rappi-red/10 flex items-center justify-center">
+                    <i class="fas fa-file-pdf text-rappi-red"></i>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-900">Generar Reporte</h3>
+                    <p class="text-sm text-gray-600">Descarga un reporte PDF del período seleccionado</p>
+                </div>
             </div>
-            <div>
-                <h3 class="font-semibold text-gray-900">Tendencia de Alertas</h3>
-                <p class="text-sm text-gray-600">Alertas por día en el período seleccionado</p>
-            </div>
+            <button onclick="generarReportePDF()" class="btn-primary">
+                <i class="fas fa-download mr-2"></i>Descargar PDF
+            </button>
         </div>
-
-        <canvas id="alertasChart" class="w-full" style="max-height: 300px;"></canvas>
     </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    const alertasPorDia = {{ alertas_por_dia|safe }};
+    function generarReportePDF() {
+        const fechaInicio = '{{ fecha_inicio|date:"Y-m-d" }}';
+        const fechaFin = '{{ fecha_fin|date:"Y-m-d" }}';
 
-    const labels = alertasPorDia.map(item => {
-        const fecha = new Date(item.fecha);
-        return fecha.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' });
-    });
+        // Mostrar mensaje de carga
+        const btn = event.target.closest('button');
+        const textoOriginal = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Generando...';
 
-    const data = alertasPorDia.map(item => item.total);
-
-    const ctx = document.getElementById('alertasChart').getContext('2d');
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Alertas',
-                data: data,
-                borderColor: '#dc2626',
-                backgroundColor: 'rgba(220, 38, 38, 0.1)',
-                tension: 0.4,
-                fill: true,
-                pointRadius: 4,
-                pointHoverRadius: 6,
-                pointBackgroundColor: '#dc2626',
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                },
-                tooltip: {
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    padding: 12,
-                    titleFont: { size: 14 },
-                    bodyFont: { size: 13 }
+        // Realizar solicitud al servidor
+        fetch(`/operador/reportes/pdf/?fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Error al generar el PDF');
                 }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        precision: 0
-                    },
-                    grid: {
-                        color: 'rgba(0, 0, 0, 0.05)'
-                    }
-                },
-                x: {
-                    grid: {
-                        display: false
-                    }
-                }
-            }
-        }
-    });
+                return response.blob();
+            })
+            .then(blob => {
+                // Crear un enlace de descarga
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `reporte_alertas_${fechaInicio}_${fechaFin}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+
+                // Restaurar botón
+                btn.disabled = false;
+                btn.innerHTML = textoOriginal;
+            })
+            .catch(error => {
+                alert('Error al generar el reporte PDF. Por favor, intenta nuevamente.');
+                console.error(error);
+                btn.disabled = false;
+                btn.innerHTML = textoOriginal;
+            });
+    }
 </script>
 {% endblock %}
