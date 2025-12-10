@@ -6,18 +6,12 @@
 {% block main_class %}h-screen flex flex-col{% endblock %}
 
 {% block content %}
-<div class="flex-1 flex flex-col overflow-hidden bg-white">
+<div class="flex-1 flex flex-col overflow-hidden bg-white pb-16">
     <!-- Header -->
     <div class="header px-4 py-4">
-        <div class="max-w-7xl mx-auto flex items-center justify-between">
-            <div>
-                <h1 class="text-2xl font-bold text-gray-900">Rutas Seguras</h1>
-                <p class="text-sm text-gray-500">Compara rutas y elige la más segura</p>
-            </div>
-            <a href="{% url 'repartidor_home' %}" class="link">
-                <i class="fas fa-arrow-left"></i>
-                Volver
-            </a>
+        <div class="max-w-7xl mx-auto">
+            <h1 class="text-2xl font-bold text-gray-900">Rutas Seguras</h1>
+            <p class="text-sm text-gray-500">Compara rutas y elige la más segura</p>
         </div>
     </div>
 
@@ -173,6 +167,33 @@
                     <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
                     <span id="ubicacion-status" class="text-sm font-medium text-gray-700">Obteniendo ubicación...</span>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation Bar -->
+    <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex items-center justify-around h-16">
+                <a href="{% url 'repartidor_home' %}" class="flex flex-col items-center justify-center flex-1 text-gray-600 hover:text-rappi-red transition-colors">
+                    <i class="fas fa-home text-xl mb-1"></i>
+                    <span class="text-xs font-medium">Inicio</span>
+                </a>
+
+                <a href="{% url 'solicitar_ayuda_psicologica' %}" class="flex flex-col items-center justify-center flex-1 text-gray-600 hover:text-rappi-red transition-colors">
+                    <i class="fas fa-heart text-xl mb-1"></i>
+                    <span class="text-xs font-medium">Ayuda</span>
+                </a>
+
+                <a href="{% url 'historial' %}" class="flex flex-col items-center justify-center flex-1 text-gray-600 hover:text-rappi-red transition-colors">
+                    <i class="fas fa-history text-xl mb-1"></i>
+                    <span class="text-xs font-medium">Historial</span>
+                </a>
+
+                <a href="{% url 'mi_perfil' %}" class="flex flex-col items-center justify-center flex-1 text-gray-600 hover:text-rappi-red transition-colors">
+                    <i class="fas fa-user text-xl mb-1"></i>
+                    <span class="text-xs font-medium">Mi Perfil</span>
+                </a>
             </div>
         </div>
     </div>
