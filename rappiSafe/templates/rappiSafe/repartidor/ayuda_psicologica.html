@@ -1,9 +1,9 @@
-{% extends 'rappiSafe/base.html' %}
+{% extends 'rappiSafe/repartidor/base_repartidor.html' %}
 
 {% block title %}Ayuda Psicológica - Rappi Safe{% endblock %}
 
-{% block content %}
-<div class="max-w-2xl mx-auto pb-20">
+{% block repartidor_content %}
+<div class="max-w-2xl mx-auto p-6">
     <div class="mb-6">
         <h1 class="text-3xl font-bold text-gray-800">Solicitar Ayuda Psicológica</h1>
     </div>
@@ -68,32 +68,5 @@
             Enviar Solicitud
         </button>
     </form>
-
-    <!-- Bottom Navigation Bar -->
-    <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
-        <div class="max-w-7xl mx-auto px-4">
-            <div class="flex items-center justify-around h-16">
-                <a href="{% url 'repartidor_home' %}" class="flex flex-col items-center justify-center flex-1 text-gray-600 hover:text-rappi-red transition-colors">
-                    <i class="fas fa-home text-xl mb-1"></i>
-                    <span class="text-xs font-medium">Inicio</span>
-                </a>
-
-                <a href="{% url 'solicitar_ayuda_psicologica' %}" class="flex flex-col items-center justify-center flex-1 text-rappi-red">
-                    <i class="fas fa-heart text-xl mb-1"></i>
-                    <span class="text-xs font-medium">Ayuda</span>
-                </a>
-
-                <a href="{% url 'historial' %}" class="flex flex-col items-center justify-center flex-1 text-gray-600 hover:text-rappi-red transition-colors">
-                    <i class="fas fa-history text-xl mb-1"></i>
-                    <span class="text-xs font-medium">Historial</span>
-                </a>
-
-                <a href="{% url 'mi_perfil' %}" class="flex flex-col items-center justify-center flex-1 text-gray-600 hover:text-rappi-red transition-colors">
-                    <i class="fas fa-user text-xl mb-1"></i>
-                    <span class="text-xs font-medium">Mi Perfil</span>
-                </a>
-            </div>
-        </div>
-    </div>
 </div>
 {% endblock %}

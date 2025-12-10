@@ -76,8 +76,8 @@
                     {% endif %}
 
                     {% if alerta.estado in 'pendiente,en_atencion' %}
-                    <a href="tel:{{ alerta.repartidor.telefono }}" class="btn-success">
-                        <i class="fas fa-phone mr-2"></i>Llamar
+                    <a href="{% url 'contactar_emergencias' alerta.id %}" class="btn-success">
+                        <i class="fas fa-ambulance mr-2"></i>Contactar a Emergencias
                     </a>
                     <button onclick="cerrarAlerta('{{ alerta.id }}')" class="btn-danger">
                         <i class="fas fa-times-circle mr-2"></i>Cerrar Alerta
@@ -236,19 +236,6 @@
                 </button>
                 {% endif %}
             </div>
-
-            <!-- Información adicional -->
-            {% if alerta.datos_sensores %}
-            <div class="sidebar-section">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <div class="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
-                        <i class="fas fa-microchip text-purple-600 text-sm"></i>
-                    </div>
-                    Datos de Sensores
-                </h3>
-                <pre class="text-xs bg-gray-50 p-3 rounded-xl overflow-x-auto border border-gray-100 font-mono">{{ alerta.datos_sensores }}</pre>
-            </div>
-            {% endif %}
         </div>
     </div>
 
@@ -438,6 +425,43 @@
             if (result.success) {
                 location.reload();
             }
+        });
+    }
+
+    // Notificar contactos
+    function notificarContactos() {
+        if (!confirm('¿Deseas notificar a todos los contactos de confianza del repartidor?')) {
+            return;
+        }
+
+        const btn = event.target;
+        const textoOriginal = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Enviando...';
+
+        fetch('/operador/alerta/{{ alerta.id }}/notificar-contactos/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': window.RappiSafe.csrfToken
+            }
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                alert(`Notificaciones enviadas: ${result.contactos_notificados} exitosas, ${result.notificaciones_fallidas} fallidas`);
+                location.reload();
+            } else {
+                alert('Error al enviar notificaciones: ' + (result.error || 'Error desconocido'));
+                btn.disabled = false;
+                btn.innerHTML = textoOriginal;
+            }
+        })
+        .catch(error => {
+            alert('Error al enviar notificaciones. Por favor, intenta nuevamente.');
+            console.error(error);
+            btn.disabled = false;
+            btn.innerHTML = textoOriginal;
         });
     }
 

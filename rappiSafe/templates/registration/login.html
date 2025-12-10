@@ -8,86 +8,324 @@
     <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
     <title>Login - Rappi Safe</title>
     <link rel="stylesheet" href="{% static 'css/output.css' %}">
+    <style>
+        body {
+            background: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
+        }
+
+        .input-minimal {
+            border: 1px solid #e5e7eb;
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 14px 16px;
+            font-size: 15px;
+            transition: all 0.2s ease;
+            width: 100%;
+            color: #1f2937;
+        }
+
+        .input-minimal:focus {
+            outline: none;
+            border-color: #dc2626;
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+        }
+
+        .input-minimal::placeholder {
+            color: #9ca3af;
+        }
+
+        .input-error {
+            border-color: #dc2626 !important;
+        }
+
+        .error-message {
+            color: #dc2626;
+            font-size: 13px;
+            margin-top: 6px;
+            display: none;
+            font-weight: 500;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .btn-primary {
+            background: #dc2626;
+            color: #ffffff;
+            border: none;
+            border-radius: 12px;
+            padding: 14px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            width: 100%;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary:hover {
+            background: #b91c1c;
+        }
+
+        .btn-primary:active {
+            background: #991b1b;
+            transform: scale(0.98);
+        }
+
+        .btn-secondary {
+            background: #ffffff;
+            color: #dc2626;
+            border: 2px solid #dc2626;
+            border-radius: 12px;
+            padding: 14px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            width: 100%;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn-secondary:hover {
+            background: #fef2f2;
+            border-width: 2.5px;
+        }
+
+        .btn-secondary:active {
+            transform: scale(0.98);
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 24px 0;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .divider span {
+            padding: 0 12px;
+            color: #9ca3af;
+            font-size: 13px;
+            background: #ffffff;
+        }
+
+        .logo-container {
+            width: 72px;
+            height: 72px;
+            margin: 0 auto 24px;
+            background: #ffffff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .form-container {
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 48px 24px;
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: 300;
+            color: #1f2937;
+            margin: 0 0 8px 0;
+            letter-spacing: -0.5px;
+        }
+
+        .subtitle {
+            font-size: 15px;
+            color: #6b7280;
+            margin: 0 0 40px 0;
+            font-weight: 400;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .footer-text {
+            text-align: center;
+            color: #9ca3af;
+            font-size: 13px;
+            margin-top: 48px;
+        }
+
+        .message-box {
+            padding: 14px 16px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            font-size: 14px;
+        }
+
+        .message-error {
+            background: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+
+        .message-info {
+            background: #eff6ff;
+            color: #1e40af;
+            border: 1px solid #bfdbfe;
+        }
+
+        .link-text {
+            color: #6b7280;
+            text-decoration: none;
+            font-size: 13px;
+            transition: color 0.2s;
+        }
+
+        .link-text:hover {
+            color: #1f2937;
+        }
+    </style>
 </head>
-<body class="h-full bg-gradient-to-br from-rappi-red-600 to-rappi-red-800">
-    <div class="min-h-full flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div class="max-w-md w-full space-y-8">
+<body class="h-full">
+    <div class="min-h-screen flex items-center justify-center px-4">
+        <div class="form-container">
             <!-- Logo y título -->
             <div class="text-center">
-                <div class="mx-auto h-20 w-20 bg-white rounded-full flex items-center justify-center mb-4">
-                    <i class="fas fa-shield-alt text-4xl text-rappi-red"></i>
+                <div class="logo-container">
+                    <i class="fas fa-shield-alt text-4xl" style="color: #dc2626;"></i>
                 </div>
-                <h2 class="text-4xl font-bold text-white mb-2">
-                    Rappi Safe
-                </h2>
-                <p class="text-rappi-red-100 text-lg">
-                    Sistema de Seguridad para Repartidores
-                </p>
+                <h1>Rappi Safe</h1>
+                <p class="subtitle">Sistema de Seguridad para Repartidores</p>
             </div>
 
-            <!-- Formulario de login -->
-            <div class="bg-white rounded-2xl shadow-2xl p-8">
-                {% if messages %}
-                    {% for message in messages %}
-                    <div class="mb-4 rounded-lg p-4 {% if message.tags == 'error' %}bg-red-100 text-red-800{% else %}bg-blue-100 text-blue-800{% endif %}">
-                        {{ message }}
-                    </div>
-                    {% endfor %}
-                {% endif %}
-
-                <form method="POST" action="{% url 'login' %}" class="space-y-6">
-                    {% csrf_token %}
-
-                    <div>
-                        <label for="username" class="block text-sm font-medium text-gray-700 mb-2">
-                            Usuario
-                        </label>
-                        <input
-                            type="text"
-                            id="username"
-                            name="username"
-                            required
-                            class="input"
-                            placeholder="Ingresa tu usuario"
-                            autofocus
-                        >
-                    </div>
-
-                    <div>
-                        <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
-                            Contraseña
-                        </label>
-                        <input
-                            type="password"
-                            id="password"
-                            name="password"
-                            required
-                            class="input"
-                            placeholder="Ingresa tu contraseña"
-                        >
-                    </div>
-
-                    <div>
-                        <button type="submit" class="w-full btn-primary py-3 text-lg">
-                            <i class="fas fa-sign-in-alt mr-2"></i>
-                            Iniciar Sesión
-                        </button>
-                    </div>
-                </form>
-
-                <div class="mt-6 text-center">
-                    <a href="#" class="text-sm text-rappi-red hover:text-rappi-red-700">
-                        ¿Olvidaste tu contraseña?
-                    </a>
+            <!-- Mensajes -->
+            {% if messages %}
+                {% for message in messages %}
+                <div class="message-box {% if message.tags == 'error' %}message-error{% else %}message-info{% endif %}">
+                    {{ message }}
                 </div>
+                {% endfor %}
+            {% endif %}
+
+            <!-- Formulario -->
+            <form method="POST" action="{% url 'login' %}" id="loginForm" novalidate>
+                {% csrf_token %}
+
+                <div class="form-group">
+                    <label for="username">Usuario <span style="color: #dc2626;">*</span></label>
+                    <input
+                        type="text"
+                        id="username"
+                        name="username"
+                        required
+                        class="input-minimal"
+                        placeholder="Ingresa tu usuario"
+                        autofocus
+                    >
+                    <div class="error-message" id="error-username">El usuario es obligatorio</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Contraseña <span style="color: #dc2626;">*</span></label>
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        required
+                        class="input-minimal"
+                        placeholder="Ingresa tu contraseña"
+                    >
+                    <div class="error-message" id="error-password">La contraseña es obligatoria</div>
+                </div>
+
+                <div style="margin-top: 32px;">
+                    <button type="submit" class="btn-primary">
+                        Iniciar sesión
+                    </button>
+                </div>
+            </form>
+
+            <!-- Divider -->
+            <div class="divider">
+                <span>•</span>
             </div>
+
+            <!-- Botón secundario -->
+            <a href="{% url 'register' %}" class="btn-secondary">
+                Crear cuenta
+            </a>
 
             <!-- Footer -->
-            <div class="text-center text-rappi-red-100 text-sm">
-                <p>&copy; 2025 Rappi Safe. Todos los derechos reservados.</p>
-            </div>
+            <p class="footer-text">&copy; 2025 Rappi Safe. Todos los derechos reservados.</p>
         </div>
     </div>
+
+    <script>
+        // Validaciones
+        const form = document.getElementById('loginForm');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const usernameError = document.getElementById('error-username');
+        const passwordError = document.getElementById('error-password');
+
+        function validateField(input, errorDiv, errorMessage) {
+            if (!input.value.trim()) {
+                input.classList.add('input-error');
+                errorDiv.textContent = errorMessage;
+                errorDiv.classList.add('show');
+                return false;
+            } else {
+                input.classList.remove('input-error');
+                errorDiv.classList.remove('show');
+                return true;
+            }
+        }
+
+        usernameInput.addEventListener('blur', () => {
+            validateField(usernameInput, usernameError, 'El usuario es obligatorio');
+        });
+
+        passwordInput.addEventListener('blur', () => {
+            validateField(passwordInput, passwordError, 'La contraseña es obligatoria');
+        });
+
+        usernameInput.addEventListener('input', () => {
+            if (usernameInput.classList.contains('input-error')) {
+                validateField(usernameInput, usernameError, 'El usuario es obligatorio');
+            }
+        });
+
+        passwordInput.addEventListener('input', () => {
+            if (passwordInput.classList.contains('input-error')) {
+                validateField(passwordInput, passwordError, 'La contraseña es obligatoria');
+            }
+        });
+
+        form.addEventListener('submit', (e) => {
+            const isUsernameValid = validateField(usernameInput, usernameError, 'El usuario es obligatorio');
+            const isPasswordValid = validateField(passwordInput, passwordError, 'La contraseña es obligatoria');
+
+            if (!isUsernameValid || !isPasswordValid) {
+                e.preventDefault();
+            }
+        });
+    </script>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 </body>

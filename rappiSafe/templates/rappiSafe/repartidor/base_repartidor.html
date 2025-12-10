@@ -1,0 +1,93 @@
+{% extends 'rappiSafe/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    /* Contenedor principal con espacio para bottom nav */
+    .main-container-repartidor {
+        min-height: calc(100vh - 128px); /* viewport - navbar - bottom nav */
+        padding-bottom: 80px; /* Espacio para el bottom nav */
+    }
+
+    /* Bottom nav */
+    .bottom-nav-repartidor {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 64px;
+        background: white;
+        border-top: 1px solid #e5e7eb;
+        display: flex;
+        align-items: center;
+        justify-content: space-around;
+        z-index: 2000;
+        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    .bottom-nav-repartidor a {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 8px 16px;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        border-radius: 8px;
+        flex: 1;
+        text-align: center;
+    }
+
+    .bottom-nav-repartidor a:hover {
+        background: #f3f4f6;
+    }
+
+    .bottom-nav-repartidor a.active {
+        color: #dc2626;
+    }
+
+    .bottom-nav-repartidor a:not(.active) {
+        color: #6b7280;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .bottom-nav-repartidor a span {
+            font-size: 11px;
+        }
+        .bottom-nav-repartidor a i {
+            font-size: 18px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block main_class %}p-0 max-w-none{% endblock %}
+
+{% block content %}
+<!-- Contenedor principal con espacio para bottom nav -->
+<div class="main-container-repartidor">
+    {% block repartidor_content %}
+    <!-- El contenido específico de cada página va aquí -->
+    {% endblock %}
+</div>
+
+<!-- Bottom Navigation -->
+<div class="bottom-nav-repartidor">
+    <a href="{% url 'repartidor_home' %}" class="{% if request.resolver_match.url_name == 'repartidor_home' %}active{% endif %}">
+        <i class="fas fa-home text-xl mb-1"></i>
+        <span class="text-xs font-medium">Inicio</span>
+    </a>
+    <a href="{% url 'solicitar_ayuda_psicologica' %}" class="{% if request.resolver_match.url_name == 'solicitar_ayuda_psicologica' %}active{% endif %}">
+        <i class="fas fa-heart text-xl mb-1"></i>
+        <span class="text-xs font-medium">Ayuda</span>
+    </a>
+    <a href="{% url 'historial' %}" class="{% if request.resolver_match.url_name == 'historial' %}active{% endif %}">
+        <i class="fas fa-history text-xl mb-1"></i>
+        <span class="text-xs font-medium">Historial</span>
+    </a>
+    <a href="{% url 'mi_perfil' %}" class="{% if request.resolver_match.url_name == 'mi_perfil' %}active{% endif %}">
+        <i class="fas fa-user text-xl mb-1"></i>
+        <span class="text-xs font-medium">Mi Perfil</span>
+    </a>
+</div>
+{% endblock %}
