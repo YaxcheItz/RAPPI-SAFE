@@ -4,17 +4,11 @@
 {% block title %}Mi Perfil - Rappi Safe{% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto">
+<div class="max-w-3xl mx-auto pb-20">
     <!-- Header -->
-    <div class="flex items-center justify-between mb-8">
-        <div>
-            <h1 class="text-3xl font-bold text-gray-900 mb-1">Mi Perfil</h1>
-            <p class="text-gray-500">Administra tu información personal y de seguro</p>
-        </div>
-        <a href="{% url 'repartidor_home' %}" class="link">
-            <i class="fas fa-arrow-left"></i>
-            Volver
-        </a>
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-1">Mi Perfil</h1>
+        <p class="text-gray-500">Administra tu información personal y de seguro</p>
     </div>
 
     <form method="POST" enctype="multipart/form-data" class="space-y-6">
@@ -319,14 +313,11 @@
         </div>
 
         <!-- Botones de acción -->
-        <div class="flex flex-col sm:flex-row gap-3 sticky bottom-4 bg-white/95 backdrop-blur-sm p-4 rounded-2xl shadow-lg border border-gray-100">
-            <button type="submit" class="flex-1 btn-primary py-4">
+        <div class="flex justify-center">
+            <button type="submit" class="btn-primary py-4 px-8">
                 <i class="fas fa-save mr-2"></i>
                 Guardar Cambios
             </button>
-            <a href="{% url 'repartidor_home' %}" class="flex-1 btn-secondary py-4">
-                Cancelar
-            </a>
         </div>
     </form>
 
@@ -398,6 +389,33 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation Bar -->
+    <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex items-center justify-around h-16">
+                <a href="{% url 'repartidor_home' %}" class="flex flex-col items-center justify-center flex-1 text-gray-600 hover:text-rappi-red transition-colors">
+                    <i class="fas fa-home text-xl mb-1"></i>
+                    <span class="text-xs font-medium">Inicio</span>
+                </a>
+
+                <a href="{% url 'solicitar_ayuda_psicologica' %}" class="flex flex-col items-center justify-center flex-1 text-gray-600 hover:text-rappi-red transition-colors">
+                    <i class="fas fa-heart text-xl mb-1"></i>
+                    <span class="text-xs font-medium">Ayuda</span>
+                </a>
+
+                <a href="{% url 'historial' %}" class="flex flex-col items-center justify-center flex-1 text-gray-600 hover:text-rappi-red transition-colors">
+                    <i class="fas fa-history text-xl mb-1"></i>
+                    <span class="text-xs font-medium">Historial</span>
+                </a>
+
+                <a href="{% url 'mi_perfil' %}" class="flex flex-col items-center justify-center flex-1 text-rappi-red">
+                    <i class="fas fa-user text-xl mb-1"></i>
+                    <span class="text-xs font-medium">Mi Perfil</span>
+                </a>
+            </div>
         </div>
     </div>
 </div>

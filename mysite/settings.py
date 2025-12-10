@@ -175,3 +175,7 @@ LOGOUT_REDIRECT_URL = 'login'
 # Configuración de sesión
 SESSION_COOKIE_AGE = 86400  # 24 horas
 SESSION_SAVE_EVERY_REQUEST = True
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://*.ngrok-free.app",
+]
