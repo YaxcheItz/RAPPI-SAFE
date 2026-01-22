@@ -12,6 +12,7 @@ def crear_perfil_repartidor(sender, instance, created, **kwargs):
     if created and instance.rol == 'repartidor':
         # Verificar si ya existe un perfil para este usuario
         if not RepartidorProfile.objects.filter(user=instance).exists():
+        
             # Generar un número de identificación único
             numero_id = f"REP-{instance.id:06d}"
             RepartidorProfile.objects.create(
