@@ -31,7 +31,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-_ogb0cz@s=i8wju4+!-zn
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*').split(',')
+ALLOWED_HOSTS = ['*', 'rappisafe-mdo8.onrender.com', '.onrender.com']
 
 # Configuración de notificaciones
 # Solo se usa SMS via Mocean API (configurado en .env: MOCEAN_API_TOKEN)
