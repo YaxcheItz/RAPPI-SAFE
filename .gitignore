@@ -28,9 +28,14 @@ wheels/
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
-/static/
 /staticfiles/
 /media/
+
+# Ignorar archivos static generados pero permitir archivos fuente necesarios
+/static/*
+!/static/css/
+/static/css/*
+!/static/css/input.css
 
 # Node
 node_modules/
