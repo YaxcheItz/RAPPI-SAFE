@@ -16,13 +16,14 @@ email = 'admin@rappisafe.com'
 password = 'admin123'  # CAMBIA ESTO en producción real
 
 if not User.objects.filter(username=username).exists():
-    User.objects.create_superuser(
+    user = User.objects.create_superuser(
         username=username,
         email=email,
         password=password,
-        telefono='5555555555',  # Campo requerido en tu modelo
-        nombre='Administrador',
-        role='operador'
+        first_name='Admin',
+        last_name='RappiSafe',
+        telefono='+525555555555',
+        rol='administrador'
     )
     print(f'✅ Superusuario creado: {username}')
 else:
