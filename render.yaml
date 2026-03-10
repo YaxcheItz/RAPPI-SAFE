@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: rappisafe
+    runtime: python
+    buildCommand: "./build.sh"
+    startCommand: "daphne -b 0.0.0.0 -p $PORT mysite.asgi:application"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: False
+      - key: DJANGO_SETTINGS_MODULE
+        value: mysite.settings
+
+  - type: pserv
+    name: rappisafe-db
+    runtime: postgresql
+    plan: free
+    ipAllowList: []
