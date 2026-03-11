@@ -640,7 +640,7 @@ def operador_dashboard(request):
 
 
 @login_required
-@user_passes_test(es_operador)
+@user_passes_test(es_operador, login_url='login')
 def ver_alerta(request, alerta_id):
     """Ver detalles de una alerta específica"""
     alerta = get_object_or_404(Alerta, id=alerta_id)
@@ -670,7 +670,7 @@ def ver_alerta(request, alerta_id):
 
 
 @login_required
-@user_passes_test(es_operador)
+@user_passes_test(es_operador, login_url='login')
 def contactar_emergencias(request, alerta_id):
     """Vista para contactar servicios de emergencia"""
     alerta = get_object_or_404(Alerta, id=alerta_id)
@@ -686,7 +686,7 @@ def contactar_emergencias(request, alerta_id):
 
 
 @login_required
-@user_passes_test(es_operador)
+@user_passes_test(es_operador, login_url='login')
 @require_POST
 def atender_alerta(request, alerta_id):
     """Marcar alerta como en atención"""
@@ -726,7 +726,7 @@ def atender_alerta(request, alerta_id):
 
 
 @login_required
-@user_passes_test(es_operador)
+@user_passes_test(es_operador, login_url='login')
 @require_POST
 def cerrar_alerta(request, alerta_id):
     """Cerrar una alerta"""
@@ -771,7 +771,7 @@ def cerrar_alerta(request, alerta_id):
 
 
 @login_required
-@user_passes_test(es_operador)
+@user_passes_test(es_operador, login_url='login')
 @require_POST
 def agregar_bitacora(request, incidente_id):
     """Agregar entrada a la bitácora de un incidente"""
@@ -797,7 +797,7 @@ def agregar_bitacora(request, incidente_id):
 
 
 @login_required
-@user_passes_test(es_operador)
+@user_passes_test(es_operador, login_url='login')
 @require_POST
 def actualizar_folio_911(request, incidente_id):
     """Actualizar el folio 911 de un incidente"""
@@ -827,7 +827,7 @@ def actualizar_folio_911(request, incidente_id):
 
 
 @login_required
-@user_passes_test(es_operador)
+@user_passes_test(es_operador, login_url='login')
 def gestionar_solicitudes_psicologicas(request):
     """Vista para gestionar solicitudes de ayuda psicológica"""
     solicitudes = SolicitudAyudaPsicologica.objects.all().select_related('repartidor').order_by('-creado_en')
@@ -840,7 +840,7 @@ def gestionar_solicitudes_psicologicas(request):
 
 
 @login_required
-@user_passes_test(es_operador)
+@user_passes_test(es_operador, login_url='login')
 @require_POST
 def atender_solicitud_psicologica(request, solicitud_id):
     """Atender una solicitud de ayuda psicológica"""
@@ -868,7 +868,7 @@ def atender_solicitud_psicologica(request, solicitud_id):
 
 
 @login_required
-@user_passes_test(es_operador)
+@user_passes_test(es_operador, login_url='login')
 def reportes_operador(request):
     """Vista de reportes para operadores"""
     from datetime import datetime, timedelta
@@ -969,7 +969,7 @@ def reportes_operador(request):
 
 
 @login_required
-@user_passes_test(es_operador)
+@user_passes_test(es_operador, login_url='login')
 def historial_alertas_operador(request):
     """Vista de historial completo de alertas para operadores"""
     from django.core.paginator import Paginator
@@ -1022,7 +1022,7 @@ def historial_alertas_operador(request):
 
 
 @login_required
-@user_passes_test(es_operador)
+@user_passes_test(es_operador, login_url='login')
 @require_POST
 def notificar_contactos_operador(request, alerta_id):
     """Endpoint para notificar contactos de confianza desde el operador"""
@@ -1211,7 +1211,7 @@ def generar_reporte_pdf(request):
 
 
 @login_required
-@user_passes_test(es_operador)
+@user_passes_test(es_operador, login_url='login')
 def lista_repartidores(request):
     """Vista para listar todos los repartidores"""
     repartidores = User.objects.filter(
@@ -1270,7 +1270,7 @@ def lista_repartidores(request):
 
 
 @login_required
-@user_passes_test(es_operador)
+@user_passes_test(es_operador, login_url='login')
 def operador_perfil_view(request):
     """Vista de perfil del operador"""
     # Total de solicitudes pendientes para el badge de navegación
