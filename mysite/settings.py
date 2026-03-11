@@ -174,12 +174,4 @@ CSRF_TRUSTED_ORIGINS = [
     "https://*.ngrok-free.app",
     "https://*.ngrok-free.dev",
     "https://*.onrender.com",
-    "https://rappisafe-mdo8.onrender.com",
 ]
-
-# Configuración esencial para CSRF en Render (HTTPS)
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-
-if not DEBUG:
-    CSRF_COOKIE_SECURE = True
-    SESSION_COOKIE_SECURE = True
