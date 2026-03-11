@@ -218,8 +218,15 @@ Visit: **http://localhost:8000**
 
 **Application:** [https://rappisafe-mdo8.onrender.com/](https://rappisafe-mdo8.onrender.com/)
 
-**Test Credentials:**
-- Admin: `admin` / `admin123` *(Change after first login)*
+### 🔑 Test Credentials
+
+| Role | Username | Password |
+|------|----------|----------|
+| **Administrator** | `admin` | `admin123` |
+| **Delivery Driver** | `repartidor1` | `test123` |
+| **Operator** | `operador1` | `test123` |
+
+*Note: You can also use `repartidor2`, `repartidor3`, `operador2`, or `admin1` with the same password (`test123`).*
 
 **Note:** First load may take 30-60 seconds due to free tier cold start.
 
