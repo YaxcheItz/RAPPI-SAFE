@@ -284,7 +284,6 @@
         if (Notification.permission === 'granted') {
             new Notification('¡Nueva Alerta!', {
                 body: `${alerta.repartidor.nombre} - ${alerta.tipo === 'panico' ? 'Pánico' : 'Accidente'}`,
-                icon: '{% static "images/logo.png" %}',
                 requireInteraction: true
             });
         } else if (Notification.permission !== 'denied') {

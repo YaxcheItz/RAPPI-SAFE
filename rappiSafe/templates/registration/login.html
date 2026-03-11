@@ -404,7 +404,7 @@
             }
         });
 
-        // Quick login fill and submit
+        // Quick login fill fields
         function fillAndSubmit(user, pass) {
             usernameInput.value = user;
             passwordInput.value = pass;
@@ -415,7 +415,11 @@
             passwordInput.classList.remove('input-error');
             passwordError.classList.remove('show');
             
-            form.submit();
+            // Trigger native submit instead of JS form.submit() to fix CSRF issues
+            const submitBtn = form.querySelector('button[type="submit"]');
+            if(submitBtn) {
+                submitBtn.click();
+            }
         }
     </script>
 
