@@ -177,15 +177,9 @@ CSRF_TRUSTED_ORIGINS = [
     "https://rappisafe-mdo8.onrender.com",
 ]
 
-# Configuración de seguridad para HTTPS (Render)
+# Configuración esencial para CSRF en Render (HTTPS)
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 if not DEBUG:
     CSRF_COOKIE_SECURE = True
     SESSION_COOKIE_SECURE = True
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-    SECURE_SSL_REDIRECT = True
-    SECURE_HSTS_SECONDS = 31536000
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True
-else:
-    # Incluso en DEBUG=True, si estamos en Render necesitamos esto para CSRF
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
