@@ -1413,6 +1413,8 @@ def estadisticas_view(request):
     alertas_en_atencion = alertas.filter(estado='en_atencion').count()
     alertas_cerradas = alertas.filter(estado='cerrada').count()
     alertas_falsa_alarma = alertas.filter(estado='falsa_alarma').count()
+    alertas_resueltas = alertas.filter(estado='resuelta').count()
+    alertas_canceladas = alertas.filter(estado='cancelada').count()
 
     alertas_por_estado = alertas.values('estado').annotate(total=Count('id')).order_by('-total')
 
