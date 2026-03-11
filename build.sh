@@ -16,5 +16,5 @@ python manage.py collectstatic --no-input
 # Migrar base de datos
 python manage.py migrate
 
-# Crear superusuario
-python create_superuser.py
+# Crear usuarios y datos de demostración
+python manage.py init_demo_data
