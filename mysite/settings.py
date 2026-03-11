@@ -171,6 +171,12 @@ LOGOUT_REDIRECT_URL = 'login'
 SESSION_COOKIE_AGE = 86400  # 24 horas
 SESSION_SAVE_EVERY_REQUEST = True
 
+# Seguridad en producción (Render)
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+if not DEBUG:
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+
 CSRF_TRUSTED_ORIGINS = [
     "https://*.ngrok-free.app",
     "https://*.ngrok-free.dev",
